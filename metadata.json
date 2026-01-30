@@ -1,9 +1,0 @@
-
-{
-  "name": "CypherGuard Security Blog",
-  "description": "A high-performance, responsive cybersecurity blog and laboratory for sharing network security insights and tools.",
-  "requestFramePermissions": [
-    "camera",
-    "microphone"
-  ]
-}
