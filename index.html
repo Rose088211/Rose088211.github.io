@@ -4,46 +4,53 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Alex | 数字化双生</title>
+    <title>我的个人数字空间 | 开发者 · 创作者</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;700&family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
     <style>
         body {
-            font-family: 'Plus Jakarta Sans', 'Noto Sans SC', sans-serif;
+            font-family: 'Plus Jakarta Sans', 'Noto Sans SC', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
             background-color: #000000;
             color: #ffffff;
             overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
         }
         .bento-card {
-            background: rgba(10, 10, 10, 0.8);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            backdrop-filter: blur(20px);
-            border-radius: 24px;
-            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            background: rgba(15, 15, 15, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(24px);
+            border-radius: 28px;
+            transition: all 0.5s cubic-bezier(0.19, 1, 0.22, 1);
         }
         .bento-card:hover {
-            border-color: rgba(255, 255, 255, 0.2);
-            background: rgba(20, 20, 20, 0.9);
-            transform: translateY(-4px);
+            border-color: rgba(255, 255, 255, 0.15);
+            background: rgba(25, 25, 25, 0.8);
+            transform: translateY(-6px) scale(1.01);
+            box-shadow: 0 20px 40px -20px rgba(0, 0, 0, 0.5);
         }
         .gradient-text {
-            background: linear-gradient(135deg, #fff 0%, #666 100%);
+            background: linear-gradient(to right, #ffffff 30%, #a1a1a1 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
         .dock {
-            background: rgba(15, 15, 15, 0.7);
-            backdrop-filter: blur(16px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(20, 20, 20, 0.6);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
         }
-        @keyframes pulse-soft {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
+        /* 隐藏滚动条但保留功能 */
+        ::-webkit-scrollbar {
+            display: none;
         }
-        .animate-pulse-soft {
-            animation: pulse-soft 2s infinite;
+        .animate-float {
+            animation: float 6s ease-in-out infinite;
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
         }
     </style>
 <script type="importmap">

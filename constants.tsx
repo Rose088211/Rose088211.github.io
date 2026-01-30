@@ -4,34 +4,34 @@ import { Project, Skill } from './types';
 export const PROJECTS: Project[] = [
   {
     id: '1',
-    title: 'Nexus 全球电商架构',
-    description: '我为大型跨国零售商设计的前端中台系统。采用了模块化架构，将加载速度提升了 40%。',
-    tags: ['React', 'Next.js', 'System Design'],
-    imageUrl: 'https://images.unsplash.com/photo-1557821552-17105176677c?auto=format&fit=crop&q=80&w=800',
+    title: '星云电商架构体系',
+    description: '我主导设计的全链路电商解决方案，通过自研的渲染引擎将首屏加载性能提升了 45%，支持百万级日活。',
+    tags: ['架构设计', '性能优化', 'React'],
+    imageUrl: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&q=80&w=800',
     category: 'web'
   },
   {
     id: '2',
-    title: 'AI 视觉分析中枢',
-    description: '一个好玩的尝试。我把 TensorFlow 和 React 结合起来，做了一个可以实时分析城市街道拥堵的 Demo。',
-    tags: ['TensorFlow', 'Real-time', 'AI'],
-    imageUrl: 'https://images.unsplash.com/photo-1555949963-ff9fe0c870eb?auto=format&fit=crop&q=80&w=800',
+    title: '智瞳 AI 视觉中枢',
+    description: '探索计算机视觉在前端的应用。利用机器学习模型实现网页端的实时手势追踪与交互。',
+    tags: ['人工智能', '前端工程', '实验性'],
+    imageUrl: 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&q=80&w=800',
     category: 'ai'
   },
   {
     id: '3',
-    title: 'Lumina 冥想空间',
-    description: '这是我最喜欢的个人项目。帮助用户在嘈杂的数字生活中找到片刻宁静，注重极致的动画细节。',
-    tags: ['Mobile', 'Framer Motion', 'Wellness'],
-    imageUrl: 'https://images.unsplash.com/photo-1616469829581-73993eb86b02?auto=format&fit=crop&q=80&w=800',
+    title: '静谧空间 App',
+    description: '一款专注于心理健康的跨端应用。通过极简的设计语言和细腻的动画效果，为用户提供沉浸式的冥想体验。',
+    tags: ['移动开发', '交互设计', 'Flutter'],
+    imageUrl: 'https://images.unsplash.com/photo-1518241353330-0f7941c2d9b5?auto=format&fit=crop&q=80&w=800',
     category: 'mobile'
   }
 ];
 
 export const SKILLS: Skill[] = [
-  { name: '前端开发', level: 95, category: 'Engineering' },
-  { name: '后端工程', level: 85, category: 'Engineering' },
-  { name: 'UI/UX 设计', level: 90, category: 'Design' },
-  { name: 'AI/数据科学', level: 75, category: 'Data' },
-  { name: 'DevOps', level: 80, category: 'Engineering' }
+  { name: '前端开发', level: 95, category: '技术栈' },
+  { name: '架构设计', level: 88, category: '核心能力' },
+  { name: '产品思维', level: 92, category: '综合素质' },
+  { name: '全栈开发', level: 85, category: '技术栈' },
+  { name: '团队领导', level: 80, category: '核心能力' }
 ];

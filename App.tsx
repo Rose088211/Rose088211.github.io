@@ -19,120 +19,129 @@ const App: React.FC = () => {
       {/* 顶部个人标志 */}
       <header className="pt-12 pb-6 px-6 container mx-auto flex justify-between items-center">
         <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-blue-500 to-purple-500"></div>
-          <span className="font-bold text-xl tracking-tighter">ALEX.LOG</span>
+          <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-indigo-500 to-emerald-500 shadow-lg shadow-indigo-500/20"></div>
+          <span className="font-bold text-xl tracking-tighter">探索者 · 空间</span>
         </div>
-        <div className="flex items-center space-x-4 glass px-4 py-2 rounded-full border border-white/5 text-xs font-medium text-gray-400">
+        <div className="flex items-center space-x-4 glass px-5 py-2.5 rounded-2xl border border-white/5 text-[10px] font-bold tracking-widest text-gray-400 uppercase">
           <span className="flex items-center">
-            <span className="w-2 h-2 rounded-full bg-green-500 mr-2 animate-pulse"></span>
-            正在创作新项目中
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-2.5 animate-pulse"></span>
+            当前状态：正在构建未来
           </span>
         </div>
       </header>
 
-      <main className="container mx-auto px-6 mt-8">
-        {/* Bento Grid 布局 */}
-        <div className="grid grid-cols-1 md:grid-cols-4 md:grid-rows-4 gap-4 h-auto md:h-[800px]">
+      <main className="container mx-auto px-6 mt-12">
+        {/* 便当盒布局 */}
+        <div className="grid grid-cols-1 md:grid-cols-4 md:grid-rows-4 gap-5 h-auto md:h-[850px]">
           
-          {/* 个人简介卡片 - 占据 2x2 */}
-          <div className="md:col-span-2 md:row-span-2 bento-card p-8 flex flex-col justify-end relative overflow-hidden group">
-            <div className="absolute top-0 right-0 p-8">
-              <div className="w-24 h-24 rounded-full border border-white/10 flex items-center justify-center group-hover:rotate-12 transition-transform duration-500">
-                <span className="text-4xl">👋</span>
-              </div>
+          {/* 核心介绍 - 2x2 */}
+          <div className="md:col-span-2 md:row-span-2 bento-card p-10 flex flex-col justify-end relative overflow-hidden group">
+            <div className="absolute top-0 right-0 p-10 opacity-10 group-hover:opacity-20 transition-opacity">
+              <span className="text-[120px]">👨‍💻</span>
             </div>
-            <h1 className="text-4xl md:text-5xl font-bold leading-tight mb-4">
-              你好，我是 <span className="text-blue-500">Alex</span>。<br />
-              <span className="text-gray-500">不仅是代码，更是数字世界的艺术表达。</span>
+            <h1 className="text-4xl md:text-6xl font-bold leading-tight mb-6">
+              我是 <span className="text-emerald-400">Alex</span>。<br />
+              <span className="text-gray-500">在逻辑与美学之间<br />寻找最优解。</span>
             </h1>
-            <p className="text-gray-400 max-w-md">
-              拥有 8 年经验的前端架构师。擅长用 React 构建极其流畅的用户界面，并对比特币和生成式 AI 充满热情。
+            <p className="text-gray-400 text-lg max-w-md leading-relaxed">
+              八年前端深耕者。热爱开源，热衷于将复杂的技术挑战转化为优雅的用户体验。目前专注于 AI 驱动的前端架构探索。
             </p>
           </div>
 
-          {/* 所在地卡片 - 占据 1x1 */}
-          <div className="bento-card p-6 flex flex-col justify-between">
-            <div className="text-sm font-medium text-gray-500 uppercase tracking-widest">所在地</div>
+          {/* 时钟卡片 - 1x1 */}
+          <div className="bento-card p-8 flex flex-col justify-between">
+            <div className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">我的所在地</div>
             <div className="flex flex-col">
-              <span className="text-2xl font-bold">上海, 中国</span>
-              <span className="text-4xl font-mono mt-2 text-blue-400">{time}</span>
+              <span className="text-xl font-bold">上海 · 中国</span>
+              <span className="text-5xl font-mono mt-3 text-emerald-400 tracking-tighter">{time}</span>
             </div>
           </div>
 
-          {/* 社交/链接卡片 - 占据 1x1 */}
-          <div className="bento-card p-6 grid grid-cols-2 gap-3">
-            {['GitHub', 'Twitter', 'Bilibili', 'Blog'].map(link => (
-              <a key={link} href="#" className="flex items-center justify-center glass rounded-xl text-xs font-bold hover:bg-white hover:text-black transition-all">
-                {link}
+          {/* 链接卡片 - 1x1 */}
+          <div className="bento-card p-4 grid grid-cols-2 gap-4">
+            {[
+              { n: '代码', l: 'GitHub' },
+              { n: '思想', l: '博客' },
+              { n: '联系', l: '微信' },
+              { n: '动态', l: '即刻' }
+            ].map(item => (
+              <a key={item.l} href="#" className="flex flex-col items-center justify-center glass rounded-2xl p-4 hover:bg-white/5 transition-all group">
+                <span className="text-[10px] text-gray-500 font-bold mb-1 uppercase">{item.n}</span>
+                <span className="text-xs font-bold text-white group-hover:text-emerald-400">{item.l}</span>
               </a>
             ))}
           </div>
 
-          {/* 技术栈卡片 - 占据 2x1 */}
-          <div className="md:col-span-2 bento-card p-6">
-            <div className="text-sm font-medium text-gray-500 uppercase tracking-widest mb-6">我的数字工具箱</div>
-            <div className="flex flex-wrap gap-2">
-              {['React', 'Next.js', 'TypeScript', 'Node.js', 'Tailwind', 'Three.js', 'Solidity', 'PyTorch'].map(tag => (
-                <span key={tag} className="px-4 py-2 rounded-full border border-white/5 bg-white/5 text-sm font-medium hover:border-blue-500/50 transition-colors cursor-default">
+          {/* 技能标签 - 2x1 */}
+          <div className="md:col-span-2 bento-card p-8">
+            <div className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-8">精通的工具与领域</div>
+            <div className="flex flex-wrap gap-3">
+              {['React 生态', 'TypeScript', 'Node.js 服务端', '云原生架构', '三维可视化', '区块链技术', 'AI 模型集成'].map(tag => (
+                <span key={tag} className="px-5 py-2.5 rounded-2xl border border-white/5 bg-white/5 text-sm font-medium hover:bg-white hover:text-black transition-all cursor-default shadow-sm">
                   {tag}
                 </span>
               ))}
             </div>
           </div>
 
-          {/* 音乐/近期状态卡片 - 占据 1x2 */}
-          <div className="md:row-span-2 bento-card p-6 relative overflow-hidden flex flex-col justify-between">
-             <div className="text-sm font-medium text-gray-500 uppercase tracking-widest mb-4">近期思考</div>
-             <p className="text-lg italic text-gray-300 leading-relaxed">
-               "好的架构应该是隐形的，就像呼吸一样自然，只有在它出问题时你才会察觉。"
+          {/* 灵感卡片 - 1x2 */}
+          <div className="md:row-span-2 bento-card p-8 relative overflow-hidden flex flex-col justify-between">
+             <div className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-6">今日寄语</div>
+             <p className="text-2xl font-bold leading-relaxed gradient-text">
+               “代码的终极目标不是运行，而是被理解和被信赖。”
              </p>
-             <div className="mt-8 pt-6 border-t border-white/5">
+             <div className="mt-10 pt-8 border-t border-white/5">
                 <div className="flex items-center space-x-4">
-                  <div className="w-12 h-12 bg-blue-900/30 rounded-lg flex items-center justify-center animate-pulse-soft">
-                    🎵
+                  <div className="w-14 h-14 bg-emerald-500/10 rounded-2xl flex items-center justify-center animate-pulse">
+                    ☕
                   </div>
                   <div>
-                    <div className="text-xs text-gray-500">正在播放</div>
-                    <div className="text-sm font-bold">Lofi Girl - Study Beat</div>
+                    <div className="text-[10px] text-gray-500 font-bold uppercase">正在享用</div>
+                    <div className="text-sm font-bold">冰滴咖啡 · 埃塞俄比亚</div>
                   </div>
                 </div>
              </div>
           </div>
 
-          {/* 工作经历/数据卡片 - 占据 1x2 */}
-          <div className="md:row-span-2 bento-card p-6 flex flex-col justify-between">
-            <div className="text-sm font-medium text-gray-500 uppercase tracking-widest mb-4">职业数据</div>
-            <div className="space-y-6">
+          {/* 数据统计 - 1x2 */}
+          <div className="md:row-span-2 bento-card p-8 flex flex-col justify-between">
+            <div className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">成长足迹</div>
+            <div className="space-y-8">
               {[
-                { label: '项目实战', val: '42+' },
-                { label: '代码贡献', val: '12K+' },
-                { label: '技术文章', val: '150+' }
+                { label: '交付项目', val: '50+' },
+                { label: 'Star 数量', val: '2.4K' },
+                { label: '累计提交', val: '8000+' }
               ].map(item => (
                 <div key={item.label}>
-                  <div className="text-3xl font-bold">{item.val}</div>
-                  <div className="text-xs text-gray-500 uppercase">{item.label}</div>
+                  <div className="text-4xl font-bold tracking-tighter">{item.val}</div>
+                  <div className="text-[10px] text-gray-500 font-bold uppercase mt-1">{item.label}</div>
                 </div>
               ))}
             </div>
           </div>
 
-          {/* 简历下载卡片 - 占据 2x1 */}
-          <div className="md:col-span-2 bento-card p-6 bg-gradient-to-r from-blue-600/20 to-purple-600/20 border-blue-500/30 flex items-center justify-between group cursor-pointer">
-            <div>
-              <h3 className="text-xl font-bold mb-1">获取我的完整简历</h3>
-              <p className="text-sm text-gray-400">PDF 格式，最后更新于 2024年12月</p>
+          {/* 下载简历 - 2x1 */}
+          <div className="md:col-span-2 bento-card p-8 bg-gradient-to-br from-indigo-500/10 to-transparent border-indigo-500/20 flex items-center justify-between group cursor-pointer">
+            <div className="flex items-center space-x-6">
+              <div className="w-16 h-16 rounded-3xl bg-indigo-500/10 flex items-center justify-center group-hover:bg-indigo-500/20 transition-colors">
+                📄
+              </div>
+              <div>
+                <h3 className="text-xl font-bold mb-1">查阅我的详细履历</h3>
+                <p className="text-sm text-gray-400">PDF 文档 · 包含完整的项目细节与技术深度</p>
+              </div>
             </div>
-            <div className="w-12 h-12 rounded-full bg-blue-600 flex items-center justify-center group-hover:scale-110 transition-transform">
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            <div className="w-14 h-14 rounded-full bg-white text-black flex items-center justify-center group-hover:rotate-45 transition-transform">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 4v16m8-8H4" strokeWidth="3" strokeLinecap="round"/></svg>
             </div>
           </div>
         </div>
 
-        {/* 项目展示区 */}
-        <div className="mt-20">
-          <div className="flex items-center space-x-4 mb-12">
-             <h2 className="text-4xl font-bold">精选作品集</h2>
-             <div className="h-px flex-1 bg-white/5"></div>
+        {/* 项目部分 */}
+        <div id="projects" className="mt-32">
+          <div className="flex flex-col mb-16">
+             <div className="text-[10px] font-bold text-indigo-400 uppercase tracking-[0.3em] mb-4">案例展示 / SELECTED CASE STUDIES</div>
+             <h2 className="text-5xl font-bold">这些年我所热衷的事。</h2>
           </div>
           <ProjectGallery />
         </div>
@@ -141,8 +150,10 @@ const App: React.FC = () => {
       <Navigation />
       <AIChatAssistant />
       
-      <footer className="mt-32 py-12 text-center text-gray-600 text-xs tracking-widest uppercase">
-        Designed & Coded by Alex © 2024
+      <footer className="mt-40 py-16 text-center border-t border-white/5">
+        <div className="text-[10px] text-gray-600 font-bold tracking-[0.5em] uppercase">
+          独立设计与开发 · Alex 2024
+        </div>
       </footer>
     </div>
   );

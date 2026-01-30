@@ -1,7 +1,7 @@
 
 {
-  "name": "Nexus Portfolio Engine",
-  "description": "A world-class professional portfolio template featuring high-end design, project showcase, and an integrated Gemini-powered AI career assistant.",
+  "name": "个人数字花园 | 开发者作品集",
+  "description": "一个集成了 Gemini AI 数字化双生的个人开发者作品集，展示技术实力与创造力。",
   "requestFramePermissions": [
     "camera",
     "microphone"
