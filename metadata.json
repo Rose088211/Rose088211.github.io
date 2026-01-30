@@ -1,0 +1,9 @@
+
+{
+  "name": "Nexus Portfolio Engine",
+  "description": "A world-class professional portfolio template featuring high-end design, project showcase, and an integrated Gemini-powered AI career assistant.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}

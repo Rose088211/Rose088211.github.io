@@ -1,173 +1,66 @@
+
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh-CN" class="scroll-smooth">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>我的主页</title>
+    <title>Alex | 数字化双生</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
     <style>
-        /* --- 核心样式 (保持离线与极简) --- */
-        :root {
-            --primary: #4f46e5;       /* 靛蓝色 */
-            --bg: #f3f4f6;            /* 浅灰背景 */
-            --card: #ffffff;
-            --text-main: #111827;
-            --text-sub: #6b7280;
-        }
-
         body {
-            font-family: system-ui, -apple-system, sans-serif;
-            background-color: var(--bg);
-            color: var(--text-main);
-            margin: 0;
-            line-height: 1.6;
-            display: flex;
-            justify-content: center;
-            min-height: 100vh;
+            font-family: 'Plus Jakarta Sans', 'Noto Sans SC', sans-serif;
+            background-color: #000000;
+            color: #ffffff;
+            overflow-x: hidden;
         }
-
-        .container {
-            width: 100%;
-            max-width: 600px;
-            background: var(--card);
-            min-height: 100vh;
-            padding: 40px 30px;
-            box-shadow: 0 0 20px rgba(0,0,0,0.05);
+        .bento-card {
+            background: rgba(10, 10, 10, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(20px);
+            border-radius: 24px;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
-
-        /* 桌面端让卡片居中显示 */
-        @media (min-width: 640px) {
-            body { align-items: center; padding: 20px; }
-            .container { 
-                min-height: auto; 
-                border-radius: 20px; 
-            }
+        .bento-card:hover {
+            border-color: rgba(255, 255, 255, 0.2);
+            background: rgba(20, 20, 20, 0.9);
+            transform: translateY(-4px);
         }
-
-        /* --- 头像区域 --- */
-        .profile-header {
-            text-align: center;
-            margin-bottom: 40px;
+        .gradient-text {
+            background: linear-gradient(135deg, #fff 0%, #666 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
-
-        .avatar {
-            width: 100px;
-            height: 100px;
-            border-radius: 50%;
-            margin-bottom: 15px;
-            /* 这里的 box-shadow 增加一点层次感 */
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-            object-fit: cover;
+        .dock {
+            background: rgba(15, 15, 15, 0.7);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
-
-        h1 { margin: 0; font-size: 1.8rem; letter-spacing: -0.5px; }
-        .tagline { color: var(--text-sub); margin-top: 8px; font-size: 0.95rem; }
-
-        /* --- 社交链接 --- */
-        .social-row {
-            display: flex;
-            justify-content: center;
-            gap: 15px;
-            margin-top: 20px;
+        @keyframes pulse-soft {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
         }
-        
-        .social-btn {
-            background: #f9fafb;
-            color: var(--text-main);
-            text-decoration: none;
-            padding: 8px 12px;
-            border-radius: 8px;
-            font-size: 0.85rem;
-            font-weight: 600;
-            transition: 0.2s;
-            border: 1px solid #e5e7eb;
-        }
-
-        .social-btn:hover { background: #e0e7ff; color: var(--primary); border-color: var(--primary); }
-
-        /* --- 内容区域 --- */
-        .section-title {
-            font-size: 0.85rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            color: var(--text-sub);
-            margin-top: 40px;
-            margin-bottom: 15px;
-            font-weight: 700;
-            border-bottom: 2px solid #f3f4f6;
-            padding-bottom: 5px;
-        }
-
-        .card-item {
-            display: block;
-            text-decoration: none;
-            color: inherit;
-            padding: 15px;
-            border-radius: 12px;
-            margin-bottom: 10px;
-            background: #f9fafb;
-            transition: 0.2s;
-        }
-
-        .card-item:hover {
-            background: #eff6ff;
-            transform: scale(1.02);
-        }
-
-        .card-title { font-weight: 600; font-size: 1rem; }
-        .card-desc { font-size: 0.85rem; color: var(--text-sub); margin-top: 4px; }
-
-        footer {
-            text-align: center;
-            font-size: 0.75rem;
-            color: #9ca3af;
-            margin-top: 50px;
+        .animate-pulse-soft {
+            animation: pulse-soft 2s infinite;
         }
     </style>
+<script type="importmap">
+{
+  "imports": {
+    "@google/genai": "https://esm.sh/@google/genai@^1.38.0",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.4/",
+    "react/": "https://esm.sh/react@^19.2.4/",
+    "react": "https://esm.sh/react@^19.2.4",
+    "recharts": "https://esm.sh/recharts@^3.7.0"
+  }
+}
+</script>
+<link rel="stylesheet" href="/index.css">
 </head>
 <body>
-
-    <div class="container">
-        <header class="profile-header">
-            <img 
-                src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjNDc1NTY5IiBzdHJva2Utd2lkdGg9IjEuNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj48cGF0aCBkPSJNMjAgMjF2LTJhNCA0IDAgMCAtNC00aC04YTQgNCAwIDAgLTQtNHYyIiAvPjxjaXJjbGUgY3g9IjEyIiBjeT0iNyIgcj0iNCIgLz48L3N2Zz4=" 
-                alt="头像" 
-                class="avatar"
-            >
-            
-            <h1>你的名字</h1>
-            <p class="tagline">以代码构建世界，用极简诠释生活。</p>
-
-            <div class="social-row">
-                <a href="#" class="social-btn">GitHub</a>
-                <a href="#" class="social-btn">Bilibili</a>
-                <a href="mailto:hi@example.com" class="social-btn">Email</a>
-            </div>
-        </header>
-
-        <div>
-            <div class="section-title">关于我</div>
-            <p style="font-size: 0.95rem; color: #374151;">
-                这是一段纯文本介绍。由于使用了 Base64 图片，这个网页是一个完全独立的单文件。
-                即使断网，只要保存了 HTML，头像依然可以显示。
-            </p>
-
-            <div class="section-title">我的项目</div>
-            
-            <a href="#" class="card-item">
-                <div class="card-title">🚀 单文件网页生成器</div>
-                <div class="card-desc">一个 Python 脚本，自动将本地图片转换为 Base64 并嵌入 HTML。</div>
-            </a>
-
-            <a href="#" class="card-item">
-                <div class="card-title">📝 极简笔记</div>
-                <div class="card-desc">专注于写作体验的 Markdown 编辑器配置。</div>
-            </a>
-        </div>
-
-        <footer>
-            Built with 100% Inline HTML & CSS
-        </footer>
-    </div>
-
+    <div id="root"></div>
+<script type="module" src="/index.tsx"></script>
 </body>
 </html>
