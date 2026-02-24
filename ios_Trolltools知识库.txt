@@ -102,5 +102,19 @@
     "是否主流工具": false,
     "下载渠道链接": "https://github.com/verygenericname/WinRa1n/releases",
     "安装和使用教程链接": "https://github.com/verygenericname/WinRa1n"
+  }，
+  "dopamine": {
+    "官方标准名称": "Dopamine",
+    "所属类型": "越狱工具",
+    "首发时间": "2023-05-05 (Dopamine 1.0)",
+    "最后维护时间": "2024-12-23 (Dopamine 2.4.3)",
+    "维护状态": "活跃",
+    "获取root原理": "利用kfd、weightBufs等内核漏洞获取内核读写权限，实现提权和代码注入[citation:1][citation:3]",
+    "开发团队背景": "由opa334（TrollStore作者）主导开发，ellekit团队协助[citation:1][citation:6][citation:9]",
+    "衍生工具": "Dopamine-RootHide (隐藏越狱分支)",
+    "是否主流工具": true,
+    "下载渠道链接": "https://github.com/opa334/Dopamine/releases",
+    "安装和使用教程链接": "https://ios.cfw.guide/installing-dopamine/"
   }
+
 }
