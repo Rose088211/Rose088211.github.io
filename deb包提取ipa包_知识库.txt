@@ -1,0 +1,48 @@
+{
+  "task": "将 .deb 包转换为 .ipa",
+  "summary": "该过程通过提取应用包并重新打包为 iOS 所需的格式，将 Debian 软件包（.deb）转换为 iOS 应用包（.ipa）。",
+  "steps": [
+    {
+      "step": 1,
+      "action": "下载目标发行版对应架构的 .deb 包",
+      "details": "获取适用于目标架构（如 arm64）的 .deb 文件。确保该软件包包含 iOS 应用，通常来自越狱源。",
+      "command_example": "wget http://example.com/package.deb"
+    },
+    {
+      "step": 2,
+      "action": "解压 .deb 包",
+      "details": ".deb 文件是一种 ar 归档。使用 ar x 提取 control 和 data 归档，然后解压 data tarball（通常是 data.tar.xz 或 data.tar.gz）以访问文件。",
+      "command_example": "ar x package.deb && tar -xf data.tar.xz"
+    },
+    {
+      "step": 3,
+      "action": "找到 .app 包",
+      "details": "浏览解压后的文件，找到扩展名为 .app 的文件夹。通常位于 ./Applications/、./var/mobile/Applications/ 或类似路径下。 .app 文件夹包含 iOS 应用程序。",
+      "command_example": "find . -name '*.app' -type d"
+    },
+    {
+      "step": 4,
+      "action": "创建 Payload 文件夹",
+      "details": "创建一个名为 'Payload' 的文件夹，并将 .app 包移动或复制到其中。最终结构应为 Payload/YourApp.app/。",
+      "command_example": "mkdir Payload && cp -r path/to/YourApp.app Payload/"
+    },
+    {
+      "step": 5,
+      "action": "将 Payload 文件夹压缩为 ZIP",
+      "details": "创建 Payload 文件夹的 ZIP 归档。使用标准 zip 压缩，不要使用额外压缩级别以确保兼容性。",
+      "command_example": "zip -r Payload.zip Payload"
+    },
+    {
+      "step": 6,
+      "action": "将 ZIP 重命名为 .ipa",
+      "details": "将文件扩展名从 .zip 改为 .ipa。生成的 .ipa 文件现在可以通过侧载工具或越狱方法安装到 iOS 设备上。",
+      "command_example": "mv Payload.zip YourApp.ipa"
+    }
+  ],
+  "notes": [
+    ".ipa 文件本质上是一个包含 Payload 文件夹（内含 .app 包）的 ZIP 归档。",
+    "对于未越狱设备的安装，.app 包必须使用有效的配置文件进行正确签名（或重新签名）。",
+    "确保架构（如 arm64）与目标 iOS 设备的 CPU 匹配。",
+    "此方法常用于将越狱应用从 Cydia 源转换为可侧载的 .ipa 文件。"
+  ]
+}
