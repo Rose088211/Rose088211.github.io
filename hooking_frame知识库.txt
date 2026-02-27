@@ -1,0 +1,233 @@
+root管理器：magisk AlphaMask KitsuneMask kernelsu Apatch kingroot
+注入框架：太极 无极 lsposed edxposed lspatch Shizuku riru rirulsposed npatch  opatch
+
+以上每个对象属性包括（官方标准名称、所属类型、首发时间、最后维护时间、维护状态、获取root原理、开发团队背景、衍生工具、是否主流工具、下载渠道链接、安装和使用教程链接、）以json格式输出
+
+
+
+{
+  "root_managers": [
+    {
+      "官方标准名称": "Magisk",
+      "所属类型": "Root管理器",
+      "首发时间": "2016年",
+      "最后维护时间": "2025-12-01 (v30.6)",
+      "维护状态": "活跃维护",
+      "获取root原理": "Systemless Root技术，不修改/system分区，通过boot镜像修补实现无损Root",
+      "开发团队背景": "由台湾开发者@topjohnwu创建，开源社区维护",
+      "衍生工具": ["Magisk Delta", "Kitsune Mask", "Alpha Magisk", "Shamiko"],
+      "是否主流工具": true,
+      "下载渠道链接": "https://github.com/topjohnwu/Magisk/releases",
+      "安装和使用教程链接": "https://github.com/topjohnwu/Magisk/wiki/Installing"
+    },
+    {
+      "官方标准名称": "Magisk Alpha",
+      "所属类型": "Root管理器 (Magisk分支)",
+      "首发时间": "2022年",
+      "最后维护时间": "2025年中",
+      "维护状态": "社区维护",
+      "获取root原理": "基于Magisk的Systemless Root技术，增强隐藏能力",
+      "开发团队背景": "社区开发者维护的Magisk分支",
+      "衍生工具": [],
+      "是否主流工具": false,
+      "下载渠道链接": "https://github.com/CoderTyn/Magisk-Alpha/releases",
+      "安装和使用教程链接": "https://github.com/CoderTyn/Magisk-Alpha/wiki"
+    },
+    {
+      "官方标准名称": "Kitsune Mask",
+      "所属类型": "Root管理器 (Magisk分支)",
+      "首发时间": "2022年 (原Magisk Delta)",
+      "最后维护时间": "2025年",
+      "维护状态": "活跃维护",
+      "获取root原理": "继承Magisk的Systemless Root，重新添加Magisk Hide功能",
+      "开发团队背景": "社区开发者维护，原Magisk Delta团队",
+      "衍生工具": [],
+      "是否主流工具": false,
+      "下载渠道链接": "https://github.com/1q23lyc45/KitsuneMagisk/releases",
+      "安装和使用教程链接": "https://github.com/1q23lyc45/KitsuneMagisk/wiki"
+    },
+    {
+      "官方标准名称": "KernelSU",
+      "所属类型": "Root管理器 (内核级)",
+      "首发时间": "2021年",
+      "最后维护时间": "2025年",
+      "维护状态": "活跃维护",
+      "获取root原理": "内核级Root方案，直接在内核空间授予root权限",
+      "开发团队背景": "由开发者tiann创建，开源社区维护",
+      "衍生工具": ["KernelSU-Next"],
+      "是否主流工具": true,
+      "下载渠道链接": "https://github.com/tiann/KernelSU/releases",
+      "安装和使用教程链接": "https://kernelsu.org/guide/installation.html"
+    },
+    {
+      "官方标准名称": "APatch",
+      "所属类型": "Root管理器 (内核级)",
+      "首发时间": "2023年",
+      "最后维护时间": "2025年",
+      "维护状态": "活跃维护",
+      "获取root原理": "结合Magisk安装方式和KernelSU内核级能力，通过修补boot镜像实现",
+      "开发团队背景": "由开发者bmax121创建，开源项目",
+      "衍生工具": [],
+      "是否主流工具": false,
+      "下载渠道链接": "https://github.com/bmax121/APatch/releases",
+      "安装和使用教程链接": "https://github.com/bmax121/APatch/wiki/installation"
+    },
+    {
+      "官方标准名称": "KingRoot",
+      "所属类型": "Root管理器 (一键Root工具)",
+      "首发时间": "2013年",
+      "最后维护时间": "2019-03 (v5.4.0)",
+      "维护状态": "已停止维护",
+      "获取root原理": "利用Android系统漏洞实现一键Root",
+      "开发团队背景": "由中国KingRoot Studio公司开发",
+      "衍生工具": [],
+      "是否主流工具": false,
+      "下载渠道链接": "无官方维护渠道",
+      "安装和使用教程链接": "无官方维护教程"
+    }
+  ],
+  "injection_frameworks": [
+    {
+      "官方标准名称": "太极·阴",
+      "所属类型": "注入框架 (免Root Xposed)",
+      "首发时间": "2019年",
+      "最后维护时间": "2025年 (v14.0.6)",
+      "维护状态": "活跃维护",
+      "获取root原理": "通过虚拟环境和双开机制创建隔离空间，无需Root即可运行Xposed模块",
+      "开发团队背景": "中国开发者团队维护",
+      "衍生工具": ["太极·阳 (Root版本)"],
+      "是否主流工具": true,
+      "下载渠道链接": "https://github.com/hongye612430/TaiChi-Guide",
+      "安装和使用教程链接": "https://github.com/hongye612430/TaiChi-Guide/wiki"
+    },{
+      "官方标准名称": "太极阳",
+      "所属类型": "注入框架",
+      "首发时间": "2019年",
+      "最后维护时间": "2025年",
+      "维护状态": "活跃维护",
+      "获取root原理": "基于Magisk模块，通过Riru或Zygisk实现Xposed框架",
+      "开发团队背景": "开发者甚林维护，中国开发者社区",
+      "衍生工具": ["太极工具箱"],
+      "是否主流工具": true,
+      "下载渠道链接": "https://github.com/weishu/TaiChi/releases",
+      "安装和使用教程链接": "https://t.cn/A6fXvXhE"
+    },
+    {
+      "官方标准名称": "无极",
+      "所属类型": "注入框架",
+      "首发时间": "2023年",
+      "最后维护时间": "2025年",
+      "维护状态": "活跃维护",
+      "获取root原理": "通过虚拟机技术实现免root的模块注入",
+      "开发团队背景": "中国开发者团队维护",
+      "衍生工具": [],
+      "是否主流工具": false,
+      "下载渠道链接": "https://github.com/546669696/WuJi/releases",
+      "安装和使用教程链接": "https://github.com/546669696/WuJi/wiki"
+    },
+    {
+      "官方标准名称": "LSPosed",
+      "所属类型": "注入框架 (Xposed框架)",
+      "首发时间": "2020年",
+      "最后维护时间": "2025年",
+      "维护状态": "活跃维护",
+      "获取root原理": "基于ART Hooking技术，通过Riru/Zygisk模块实现Xposed API",
+      "开发团队背景": "LSPosed开发团队，开源社区维护",
+      "衍生工具": ["LSPatch", "CorePatch", "Shamiko"],
+      "是否主流工具": true,
+      "下载渠道链接": "https://github.com/LSPosed/LSPosed/releases",
+      "安装和使用教程链接": "https://github.com/LSPosed/LSPosed/wiki"
+    },
+    {
+      "官方标准名称": "EdXposed",
+      "所属类型": "注入框架 (Xposed框架)",
+      "首发时间": "2018年",
+      "最后维护时间": "2023年",
+      "维护状态": "维护缓慢",
+      "获取root原理": "Xposed框架实现，支持Android 8.0-12",
+      "开发团队背景": "ElderDrivers团队开发",
+      "衍生工具": [],
+      "是否主流工具": false,
+      "下载渠道链接": "https://github.com/ElderDrivers/EdXposed/releases",
+      "安装和使用教程链接": "https://github.com/ElderDrivers/EdXposed/wiki"
+    },
+    {
+      "官方标准名称": "LSPatch",
+      "所属类型": "注入框架 (免Root Xposed)",
+      "首发时间": "2022年",
+      "最后维护时间": "2023年",
+      "维护状态": "维护缓慢",
+      "获取root原理": "无Root实现LSPosed框架，通过DEX和SO注入目标APK",
+      "开发团队背景": "LSPosed社区开发",
+      "衍生工具": ["NPatch"],
+      "是否主流工具": false,
+      "下载渠道链接": "https://github.com/LSPosed/LSPatch/releases",
+      "安装和使用教程链接": "https://github.com/LSPosed/LSPatch/wiki"
+    },
+    {
+      "官方标准名称": "Shizuku",
+      "所属类型": "注入框架 (系统API访问)",
+      "首发时间": "2019年",
+      "最后维护时间": "2025-05-25 (v13.6.0)",
+      "维护状态": "活跃维护",
+      "获取root原理": "通过ADB或Root权限提供系统API访问，无需完整Root权限",
+      "开发团队背景": "由RikkaApps开发者团队维护",
+      "衍生工具": ["Sui服务"],
+      "是否主流工具": true,
+      "下载渠道链接": "https://github.com/RikkaApps/Shizuku/releases",
+      "安装和使用教程链接": "https://shizuku.rikka.app/docs/"
+    },
+    {
+      "官方标准名称": "Riru",
+      "所属类型": "注入框架 (Hooking模块)",
+      "首发时间": "2018年",
+      "最后维护时间": "2025年",
+      "维护状态": "活跃维护",
+      "获取root原理": "为Magisk提供ART Hooking框架，支持YAHFA和LSPlant",
+      "开发团队背景": "由Rikka开发者创建，开源项目",
+      "衍生工具": ["Riru-LSposed", "Riru-Sui"],
+      "是否主流工具": true,
+      "下载渠道链接": "https://github.com/RikkaApps/Riru/releases",
+      "安装和使用教程链接": "https://github.com/RikkaApps/Riru/wiki"
+    },
+    {
+      "官方标准名称": "Riru-LSposed",
+      "所属类型": "注入框架 (组合方案)",
+      "首发时间": "2020年",
+      "最后维护时间": "2025年",
+      "维护状态": "活跃维护",
+      "获取root原理": "Riru模块 + LSPosed框架组合，提供完整Xposed环境",
+      "开发团队背景": "LSPosed开发团队维护",
+      "衍生工具": [],
+      "是否主流工具": true,
+      "下载渠道链接": "https://github.com/LSPosed/LSPosed/releases",
+      "安装和使用教程链接": "https://github.com/LSPosed/LSPosed/wiki/Installation"
+    },
+    {
+      "官方标准名称": "NPatch",
+      "所属类型": "注入框架 (免Root Xposed)",
+      "首发时间": "2023年",
+      "最后维护时间": "2025年",
+      "维护状态": "活跃维护",
+      "获取root原理": "基于LSPosed的免Root Xposed框架，复刻LSPatch功能",
+      "开发团队背景": "由7723mod/HSSkyBoy团队维护",
+      "衍生工具": [],
+      "是否主流工具": false,
+      "下载渠道链接": "https://github.com/7723mod/NPatch/releases",
+      "安装和使用教程链接": "https://github.com/7723mod/NPatch/wiki"
+    },
+    {
+      "官方标准名称": "OPatch",
+      "所属类型": "注入框架 (修补工具)",
+      "首发时间": "2024年",
+      "最后维护时间": "2025年",
+      "维护状态": "社区维护",
+      "获取root原理": "系统镜像修补工具，辅助Root和框架安装",
+      "开发团队背景": "开源社区维护",
+      "衍生工具": [],
+      "是否主流工具": false,
+      "下载渠道链接": "需查询具体社区资源",
+      "安装和使用教程链接": "需查询具体社区文档"
+    }
+  ]
+}
