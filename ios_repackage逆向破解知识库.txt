@@ -1,0 +1,51 @@
+iOS应用砸壳流程：
+	前提：
+		越狱手机
+		mac（frida-ios-dump）
+
+iOS重签名应用流程：
+	获取脱壳IPA	，解压获取Payload文件
+	对所有framework动态库、扩展进行签名
+	
+	1.开发者平台添加唯一标识（bundle ID），生成证书不管是申请开发 (Development) 证书还是发布 (Distribution) 证书，都需要使用证书请求 (.certSigningRequest) 文件，证书请求文件可以在开发者平台或者在Mac OS上使用 “钥匙串访问” 工具生成。
+	2.在开发者平台绑定devices,填写设备名称 和 UDID（设备标识）后继续生成描述文件Profiles
+	注意：前两步骤可以通过与商业平台购买
+
+	3.给.app下的可执行文件执行权限，提取（原脱壳iOS应用）授权文件，一起和新的描述文件（embedded.mobileprovision）放入 .app 目录，替换原有的描述文件。
+	4.如果需要修改 Bundle ID，则编辑 Info.plist 文件（包括主应用和所有扩展）。
+	5.删除旧签名，使用证书对主应用进行重签名。
+	7.重新打包成 IPA 并使用爱思助手安装。
+
+iOS注入脱壳应用流程：
+	注入工具：
+	
+	
+	注入方式：
+	方式一（静态注入：修改 Mach-O 并重签名注入）：
+		framework、dylib
+		1. 解压 IPA
+		2. 将动态库放入 Frameworks 目录
+		3. 修改 Mach-O 文件
+		4. 重新签名 (必须，否则无法安装)
+		必须处理：由于修改了可执行文件和 IPA 内容，破坏了原有签名，必须用新的证书重新签名才能安装到非越狱手机。
+		
+	方式二（基于系统漏洞免签免重打包注入）：
+		TrollFools 
+		1. 手机已安装巨魔商店 (TrollStore)
+		2. 打开 TrollFools
+		3. 选择 App 和动态库，点击注入
+		如果注入的插件有问题，你可以随时在 TrollFools 里移除它，而不用重新安装整个 App。
+	
+	方式三 （运行时进程注入）
+		基于调试器的动态注入（lldb + debugserver）、Frida、gdb
+		1.不修改 App 文件，在进程运行时注入代码。
+		逆向分析、动态调试、快速验证 Hook 逻辑。
+		
+	方式四（框架注入）：
+		Substrate/libhooker
+		1.不修改 App 文件，在进程运行时注入代码。
+		Cydia Substrate由三部分组成：
+			MobileHooker
+			MobileLoader
+			Safe mode
+		通过修改 dyld 的加载逻辑，在进程启动时（或通过 MobileLoader）自动加载指定目录（如 /Library/MobileSubstrate/DynamicLibraries/）中的 dylib。
