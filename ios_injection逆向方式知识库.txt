@@ -1,0 +1,65 @@
+iOS逆向注入分析方式
+{
+  "injection_methods": [
+    {
+      "name": "静态注入 (Static Injection)",
+      "description": "通过修改应用二进制 Mach-O 文件，插入动态库加载命令，并重签名以实现持久化注入。",
+      "tools": ["optool", "insert_dylib", "yololib", "codesign", "iOS App Signer"],
+      "steps": [
+        "解压 IPA 包，获取 .app 目录",
+        "将动态库（.dylib 或 .framework）放入 Frameworks 目录",
+        "使用工具修改主二进制，添加对动态库的加载命令",
+        "重新签名整个应用包",
+        "安装到设备（非越狱需有效证书）"
+      ],
+      "pentest_use": "用于向目标应用植入后门或监控代码，生成带恶意插件的 IPA 进行测试；可用于持久化控制，但需绕过应用完整性校验。",
+      "advantages": ["适用于非越狱设备", "持久有效，一次安装长期生效"],
+      "disadvantages": ["操作复杂", "可能触发应用自校验", "需开发者证书重签名"],
+      "environment": "非越狱设备（需开发者账号）或越狱设备（无需签名）"
+    },
+    {
+      "name": "TrollFools 注入 (基于漏洞免签)",
+      "description": "利用 TrollStore（基于 CoreTrust 漏洞）的永久签名机制，通过 TrollFools 工具向已安装应用注入动态库，无需重打包和签名。",
+      "tools": ["TrollFools", "TrollStore"],
+      "steps": [
+        "确保设备已安装 TrollStore",
+        "打开 TrollFools",
+        "选择目标应用和要注入的动态库",
+        "点击注入，TrollFools 自动完成注入"
+      ],
+      "pentest_use": "在已部署 TrollStore 的测试设备上，快速向目标应用注入后门插件或监控模块，便于动态分析，且可随时移除。",
+      "advantages": ["无需重签名", "无需越狱", "注入/移除方便", "不破坏原应用文件"],
+      "disadvantages": ["依赖 TrollStore 安装", "仅支持 iOS 14.0-16.6.1（特定漏洞版本）", "部分系统版本可能不支持"],
+      "environment": "支持 TrollStore 的 iOS 版本（非越狱但利用漏洞）"
+    },
+    {
+      "name": "运行时进程注入 (Runtime Injection)",
+      "description": "通过调试器或动态插桩工具，在应用运行时将代码注入内存，实现临时 Hook 和分析。",
+      "tools": ["lldb + debugserver", "Frida", "gdb"],
+      "steps": [
+        "附加到目标进程（越狱设备直接 frida-ps，非越狱需调试权限或 frida-gadget）",
+        "使用工具加载脚本或动态库（如 Frida 的 Interceptor.attach，或通过 debugserver 调用 dlopen）",
+        "执行 Hook 或监控逻辑"
+      ],
+      "pentest_use": "渗透测试中动态分析应用行为、拦截敏感数据、修改函数返回值、绕过认证等；无需永久修改，适合实时测试。",
+      "advantages": ["无需修改应用文件", "灵活，可动态调整", "适合快速验证和漏洞挖掘"],
+      "disadvantages": ["每次运行需手动附加", "非越狱设备需调试权限或重打包注入 gadget", "不持久，重启失效"],
+      "environment": "越狱设备（frida-server）或非越狱（需调试/重打包）"
+    },
+    {
+      "name": "Tweak 框架注入 (Substrate/libhooker)",
+      "description": "在越狱设备上，利用 Cydia Substrate 或 libhooker 框架，将 Tweak 动态库自动注入到目标进程，实现系统级钩子。",
+      "tools": ["Theos", "Cydia Substrate", "libhooker", "MobileSubstrate"],
+      "steps": [
+        "使用 Theos 创建 Tweak 项目，编写钩子代码",
+        "编译生成 .dylib 和 .plist 配置文件",
+        "将文件放置到 /Library/MobileSubstrate/DynamicLibraries/（或对应路径）",
+        "重启目标进程，框架自动注入"
+      ],
+      "pentest_use": "在越狱测试设备上部署持久化监控插件，如记录应用网络请求、拦截加密数据、绕过越狱检测等；适合长期控制和分析。",
+      "advantages": ["持久化注入", "无需重签名", "多进程支持", "生态成熟，功能强大"],
+      "disadvantages": ["依赖越狱环境", "安装后全局生效，调试相对不便", "可能被反越狱检测"],
+      "environment": "越狱设备"
+    }
+  ]
+}
