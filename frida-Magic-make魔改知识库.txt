@@ -1,0 +1,255 @@
+# 0x1 frida 编译流程
+
+> 建立一个项目目录并拉下frida源码，并进入项目目录
+
+```shell
+git clone --recurse-submodules -b 16.2.1 https://github.com/frida/frida
+cd frida
+```
+
+此时执行ls ，看到的文件应当是如此
+
+```log
+(base) r@ubuntu20:~/Documents/FRIDA/frida$ ls
+BSDmakefile      COPYING     frida-gum     frida.sln    Makefile.freebsd.mk  Makefile.toolchain.mk
+build            frida-clr   frida-node    frida-swift  Makefile.linux.mk    README.md
+config.mk        frida-core  frida-python  frida-tools  Makefile.macos.mk    releng
+CONTRIBUTING.md  frida-go    frida-qml     Makefile     Makefile.sdk.mk
+```
+
+> 一键 安装nodejs22
+
+```shell
+# 构造下载 URL
+NODE_TAR_URL="https://nodejs.org/dist/v22.12.0/node-v22.12.0-linux-x64.tar.xz"
+wget $NODE_TAR_URL 
+# 解压 Node.js 安装包到用户目录
+tar -xf node-v22.12.0-linux-x64.tar.xz -C $HOME/bin
+rm -r node-v22.12.0-linux-x64.tar.xz
+# 设置 NODE_HOME 和 PATH
+export NODE_HOME=$HOME/bin/node-v22.12.0-linux-x64
+export PATH=${NODE_HOME}/bin:$PATH
+# 打印 Node.js 版本以确认安装成功
+node -v
+```
+
+```log
+(base) r@ubuntu20:~/Documents/FRIDA/frida$ # 构造下载 URL
+(base) r@ubuntu20:~/Documents/FRIDA/frida$ NODE_TAR_URL="https://nodejs.org/dist/v22.12.0/node-v22.12.0-linux-x64.tar.xz"
+(base) r@ubuntu20:~/Documents/FRIDA/frida$ wget $NODE_TAR_URL 
+--2024-12-09 23:31:18--  https://nodejs.org/dist/v22.12.0/node-v22.12.0-linux-x64.tar.xz
+正在解析主机 nodejs.org (nodejs.org)... 198.18.1.205
+正在连接 nodejs.org (nodejs.org)|198.18.1.205|:443... 已连接。
+已发出 HTTP 请求，正在等待回应... 200 OK
+长度： 29734248 (28M) [application/x-xz]
+正在保存至: “node-v22.12.0-linux-x64.tar.xz”
+
+node-v22.12.0-linux-x64.tar.xz          100%[============================================================================>]  28.36M  8.89MB/s    用时 3.2s  
+
+2024-12-09 23:31:21 (8.89 MB/s) - 已保存 “node-v22.12.0-linux-x64.tar.xz” [29734248/29734248])
+
+(base) r@ubuntu20:~/Documents/FRIDA/frida$ # 解压 Node.js 安装包到用户目录
+(base) r@ubuntu20:~/Documents/FRIDA/frida$ tar -xf node-v22.12.0-linux-x64.tar.xz -C $HOME/bin
+(base) r@ubuntu20:~/Documents/FRIDA/frida$ # 设置 NODE_HOME 和 PATH
+(base) r@ubuntu20:~/Documents/FRIDA/frida$ export NODE_HOME=$HOME/bin/node-v22.12.0-linux-x64
+(base) r@ubuntu20:~/Documents/FRIDA/frida$ export PATH=${NODE_HOME}/bin:$PATH
+(base) r@ubuntu20:~/Documents/FRIDA/frida$ # 打印 Node.js 版本以确认安装成功
+(base) r@ubuntu20:~/Documents/FRIDA/frida$ node -v
+v22.12.0
+(base) r@ubuntu20:~/Documents/FRIDA/frida$ ls
+BSDmakefile      COPYING     frida-go    frida-python  frida-swift  Makefile.freebsd.mk  Makefile.sdk.mk                 README.md
+config.mk        frida-clr   frida-gum   frida-qml     frida-tools  Makefile.linux.mk    Makefile.toolchain.mk           releng
+CONTRIBUTING.md  frida-core  frida-node  frida.sln     Makefile     Makefile.macos.mk    node-v22.12.0-linux-x64.tar.xz
+(base) r@ubuntu20:~/Documents/FRIDA/frida$ rm -r node-v22.12.0-linux-x64.tar.xz
+(base) r@ubuntu20:~/Documents/FRIDA/frida$ 
+```
+
+> 再make一下
+
+```shell
+make
+```
+
+> 安装ndk
+
+执行以下命令，查看所需要的ndk版本，得到以下输出
+
+```shell
+cat releng/setup-env.sh |grep "ndk_required="
+```
+
+```log
+(base) r@ubuntu20:~/Documents/FRIDA/frida$ cat releng/setup-env.sh |grep "ndk_required="
+  ndk_required=25
+```
+
+一键安装ndk25
+
+```shell
+wget https://dl.google.com/android/repository/android-ndk-r25c-linux.zip
+unzip android-ndk-r25c-linux.zip $HOME/bin/
+rm -r android-ndk-r25c-linux.zip
+export ANDROID_NDK_ROOT=$HOME/bin/android-ndk-r25c
+export PATH=$ANDROID_NDK_ROOT:$PATH
+ndk-build -v
+```
+
+> 安装依赖
+
+```shell
+sudo apt update
+sudo apt-get install build-essential git lib32stdc++-9-dev libc6-dev-i386
+```
+
+```shell
+pip3 install lief
+```
+
+> 编译
+
+查看编译选项
+
+```shell
+(frida-compile) r@ubuntu20:~/Documents/FRIDA/frida$ make
+make[1]: 进入目录“/home/r/Documents/FRIDA/frida”
+
+Usage: make TARGET [VARIABLE=value]
+
+Where TARGET specifies one or more of:
+
+  /* gum */
+  gum-linux-x86                     Build for Linux/x86
+  gum-linux-x86_64                  Build for Linux/x86-64
+  gum-linux-x86-thin                Build for Linux/x86 without cross-arch support
+  gum-linux-x86_64-thin             Build for Linux/x86-64 without cross-arch support
+  gum-linux-x86_64-gir              Build for Linux/x86-64 with shared GLib and GIR
+  gum-linux-arm                     Build for Linux/arm
+  gum-linux-armbe8                  Build for Linux/armbe8
+  gum-linux-armhf                   Build for Linux/armhf
+......等等
+```
+
+编译安卓arm64的frida
+
+```shell
+make core-android-arm64
+```
+
+编译完成
+
+```log
+Installing lib/base/libfrida-base-1.0.a to /home/r/Documents/FRIDA/frida/build/frida-android-arm64/lib
+Installing lib/base/frida-base.h to /home/r/Documents/FRIDA/frida/build/frida-android-arm64/include/frida-1.0
+Installing lib/base/frida-base-1.0.vapi to /home/r/Documents/FRIDA/frida/build/frida-android-arm64/share/vala/vapi
+Installing lib/payload/libfrida-payload-1.0.a to /home/r/Documents/FRIDA/frida/build/frida-android-arm64/lib
+Installing lib/payload/frida-payload.h to /home/r/Documents/FRIDA/frida/build/frida-android-arm64/include/frida-1.0
+Installing lib/payload/frida-payload-1.0.vapi to /home/r/Documents/FRIDA/frida/build/frida-android-arm64/share/vala/vapi
+Installing lib/gadget/frida-gadget.so to /home/r/Documents/FRIDA/frida/build/frida-android-arm64/lib/frida/64
+Installing src/api/frida-core.h to /home/r/Documents/FRIDA/frida/build/frida-android-arm64/include/frida-1.0
+Installing src/api/frida-core-1.0.vapi to /home/r/Documents/FRIDA/frida/build/frida-android-arm64/share/vala/vapi
+Installing src/api/frida-core-1.0.deps to /home/r/Documents/FRIDA/frida/build/frida-android-arm64/share/vala/vapi
+Installing src/api/libfrida-core-1.0.a to /home/r/Documents/FRIDA/frida/build/frida-android-arm64/lib
+Installing server/frida-server to /home/r/Documents/FRIDA/frida/build/frida-android-arm64/bin
+Installing portal/frida-portal to /home/r/Documents/FRIDA/frida/build/frida-android-arm64/bin
+Installing inject/frida-inject to /home/r/Documents/FRIDA/frida/build/frida-android-arm64/bin
+Installing /home/r/Documents/FRIDA/frida/frida-core/lib/selinux/frida-selinux.h to /home/r/Documents/FRIDA/frida/build/frida-android-arm64/include/frida-1.0
+Installing /home/r/Documents/FRIDA/frida/build/tmp-android-arm64/frida-core/meson-private/frida-base-1.0.pc to /home/r/Documents/FRIDA/frida/build/frida-android-arm64/lib/pkgconfig
+Installing /home/r/Documents/FRIDA/frida/build/tmp-android-arm64/frida-core/meson-private/frida-payload-1.0.pc to /home/r/Documents/FRIDA/frida/build/frida-android-arm64/lib/pkgconfig
+Installing /home/r/Documents/FRIDA/frida/build/tmp-android-arm64/frida-core/meson-private/frida-core-1.0.pc to /home/r/Documents/FRIDA/frida/build/frida-android-arm64/lib/pkgconfig
+make[1]: 离开目录“/home/r/Documents/FRIDA/frida”
+```
+
+查看编译后的文件
+
+```shell
+cd build/frida-android-arm64/bin && ls
+```
+
+```log
+(frida-compile) r@ubuntu20:~/Documents/FRIDA/frida$ cd build/frida-android-arm64/bin && ls
+frida-inject  frida-portal  frida-server  gum-graft
+(frida-compile) r@ubuntu20:~/Documents/FRIDA/frida/build/frida-android-arm64/bin$ 
+```
+
+# 0x2 魔改frida（与上文区分，单独食用）
+{
+  "魔改frida-server正确步骤": {
+    "总体说明": "核心原则：先完整初始化原始Frida项目，再对其中自动检出的frida-core子模块单独应用魔改补丁。",
+    "详细步骤": [
+      {
+        "步骤": 1,
+        "操作": "克隆完整Frida项目并初始化",
+        "命令": "git clone --recurse-submodules https://github.com/frida/frida.git\ncd frida\n# 此时项目内已包含frida-core子目录，无需单独克隆覆盖",
+        "说明": "使用`--recurse-submodules`参数确保一次性克隆所有子模块，这是正确的基础。"
+      },
+      {
+        "步骤": 2,
+        "操作": "进入核心子模块并创建补丁目录",
+        "命令": "cd frida-core\nmkdir -p .patches",
+        "说明": "所有魔改操作都在`frida-core/`子目录内进行。`.patches`是存放补丁的标准目录。"
+      },
+      {
+        "步骤": 3,
+        "操作": "获取魔改补丁",
+        "命令": "将Florida项目(https://github.com/Ylarod/Florida)中`/patches/frida-core/`下的所有`.patch`文件，复制到当前`frida-core/.patches/`目录。",
+        "说明": "无需克隆整个Florida项目，只需其补丁文件。确保补丁文件直接放在`.patches/`下。"
+      },
+      {
+        "步骤": 4,
+        "操作": "应用魔改补丁到源代码",
+        "命令": "git am .patches/*.patch",
+        "说明": "此步骤将修改`frida:rpc`、二进制名等特征。若应用失败，尝试`git apply`命令。"
+      },
+      {
+        "步骤": 5,
+        "操作": "配置和编译 (使用Meson)",
+        "命令": "./configure --host=android-arm64\nmake",
+        "说明": "注意：原Frida项目已改用**Meson**构建系统。上述`configure`和`make`是传统方式，**很可能失败或不适用**。正确命令通常为：`meson setup build --cross-file ...` 和 `ninja -C build`，具体需参考项目内`releng/`目录的交叉编译配置。"
+      },
+      {
+        "步骤": 6,
+        "操作": "查找编译产物",
+        "路径": "在`frida-core/build/`目录下（或子目录如`server/`）查找生成的`frida-server`可执行文件。",
+        "说明": "成功编译后在此处。"
+      },
+      {
+        "步骤": 7,
+        "操作": "(可选) 深度二进制去特征",
+        "命令": "将生成的`frida-server`与Florida项目中的`anti-anti-frida.py`脚本放于同目录，运行：\npython3 anti-anti-frida.py frida-server",
+        "说明": "此步骤使用LIEF库进一步修改二进制内的字符串，隐蔽性更强，但非必需。"
+      }
+    ],
+    "关键纠错点": [
+      "错误：用克隆的frida-core覆盖原目录。正确：frida-core是子模块，步骤1的`--recurse-submodules`已自动将其克隆在正确位置。",
+      "错误：补丁目录名和位置。正确：补丁应放在`frida-core/.patches/`，而非任意`patch/`目录。",
+      "错误：构建系统。正确：Frida使用Meson+Ninja，而非传统的`./configure && make`，需使用项目提供的交叉编译命令。"
+    ]
+  }
+}
+
+
+# 0x3 运行测试
+
+> 这里换个端口，就是全绿
+
+```shell
+cd build/frida-android-arm64/bin
+adb push frida-server /data/local/tmp
+adb shell
+chmod +x frida-server
+./frida-server -l 127.0.0.1:12345
+```
+
+```shell
+frida -H 127.0.0.1:12345 -f com.yimian.envcheck
+```
+
+![](images/2024-12-10-01-06-20-image.png)
+
+# 0x4 参考
+
+> [GitHub - Ylarod/Florida: 基础反检测 frida-server / Basic anti-detection frida-server](https://github.com/Ylarod/Florida/tree/main)
+> 
+> [GitHub - hluwa/Patchs: strongR-frida](https://github.com/hluwa/Patchs)
+> 
+> [[原创]FRIDA 最新版编译 | 16.0.9-Android安全-看雪-安全社区|安全招聘|kanxue.com](https://bbs.kanxue.com/thread-276076.htm)
