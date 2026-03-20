@@ -1,0 +1,306 @@
+获取安卓架构:
+adb shell getprop ro.product.cpu.abi
+
+frida下载地址:
+https://github.com/frida/frida/releases?spm=5176.28103460.0.0.24ae6308VUZo5D
+
+adb push frida-server-14.2.18-android-arm64 /data/local/tmp/
+adb shell
+su
+chmod 777 /data/local/tmp/frida-server-14.2.18-android-arm64
+adb shell
+su
+cd /data/local/tmp
+./frida-server-14.2.18-android-arm64
+
+修改默认端口
+./frida-server-14.2.18-android-arm64 -l 0.0.0.0:27045
+frida -H 127.0.0.1:27045 -f "com.it.demo"
+
+默认端口27042
+adb -s 191QAFYJ3F254 forward tcp:27045 tcp:27045
+
+查看当前frida进程
+adb -s BH90EAZ55U shell pidof fserver1
+指定设备查看应用程序
+frida-ps -D BH90EAZ55U  -ai
+
+frida支持2种模式:Spawn和Attach
+Spawn模式:只有一种写法
+-f TARGET
+TARGET是 app包名 或 Executable二进制文件名
+Attach模式:有多种写法=针对app或Executable有不同写法
+同时支持app或Executable的:-p PID
+PID是app或Executable的进程ID
+针对Executable的: -n NAME
+NAME是Executable的二进制文件名,比如amsaccountsd
+针对app的:-N IDENTIFIER
+IDENTIFIER是app的包名,比如com.apple.Prefrences
+特殊的:针对当前手机中正在运行的frontmost最前台的:-F
+由于是,当前最前台的正在运行的= 那只能是带页面显示的app,且也无需再加额外参数指定app
+
+spawn模式启动卡住问题:
+遇到报错首先判断zygote、zygote64、usap32、usap64这四个自己的手机有没有关闭!!!
+1.setprop persist.sys.tango_zygote32.start 0
+2.magisk的zygote关闭
+
+app双进程保护spawn模式附加进程启动,识别如下:
+如果app存在双进程保护,那么我们启动objection就可能出现卡死、闪退等问题。
+idof com.atest.demo                                         <
+24641 24671
+应对措施：
+1.spawn模式附加启动
+2.objection修改agent 延时注入时机
+
+应用出现waiting for debugger解决:
+adb shell am clear-debug-app
+
+Objection查看所有活动以及利用所有活动
+android hooking list activities/android hooking list services  #1 #枚举activity
+android intent launch_activity 包名.类名.方法         #2 #在 Android 应用中强制启动指定的 Activity（界面页面）。
+android hooking search classes 包名的关键词           #3 # 搜索内存中所有已加载的类中包含指定关键词的类
+android hooking list class_methods 包名.类名          #4 # 列出类的所有方法
+android hooking watch class_method 包名.类名.方法     #5 # hook 类的方法,默认会Hook方法的所有重载
+android hooking watch class_method 包名.类名.方法 --dump-args --dump-backtrace --dump-return #6 #跟踪方法执行以及参数
+android hooking generate class 包名.类名              #7 # 生成类的hook方法
+#android hooking list classes                         # 列出内存中所有的类
+
+启动时hook时机
+objection -d -g com.atest.demo explore
+objection -d -g 进程名 explore --startup-command "android hooking watch class 路径.类名"
+
+查看hook列表
+jobs list
+
+取消hook
+jobs kill <Job ID>
+
+
+查看应用活动日志判断检测问题
+adb shell "logcat | grep 'com.atest.demo'"
+
+
+spawn模式启动超时,最直接有效的方法是关闭 USAP 功能。
+adb shell su -c "setprop persist.device_config.runtime_native.usap_pool_enabled false"
+adb shell su -c "setprop persist.sys.usap_pool_enabled false"  # 设置另一个相关属性,确保关闭
+adb reboot
+
+
+前提：已知frida注入目标进程会hook libc库以下目标函数：
+{"sigaction", "signal", "exit", "abort", "_exit"}
+反调试： 反调试是防止调试器附加到 App 的过程。攻击者可能会使用反调试技术,如 ptrace、sysctl 等,来检测和绕过 App 的调试防护。
+需要知道是那个so在检测frida,可以hook dlopen看一下so的加载流程
+function hook_dlopen() {
+    Interceptor.attach(Module.findExportByName(null, "android_dlopen_ext"),
+        {
+            onEnter: function (args) {
+                var pathptr = args[0];
+                if (pathptr !== undefined && pathptr != null) {
+                    var path = ptr(pathptr).readCString();
+                    console.log("load " + path);
+                }
+            }
+        }
+    );
+}
+hook_dlopen();
+如果有了解过so的加载流程,那么就会知道linker会先对so进行加载与链接
+然后调用so的.init_proc函数
+接着调用.init_array中的函数
+最后才是JNI_OnLoad函数
+所以我需要先确定检测点大概在哪个函数中
+使用frida hook JNI_OnLoad函数
+1.如果调用了该函数就输出一行日志
+2.如果没有日志输出,那么就说明检测点在.init_xxx函数中
+注入的时机可以选择dlopen加载libmsaoaidsec.so完成之后。
+function hook_dlopen(soName = '') {
+    Interceptor.attach(Module.findExportByName(null, "android_dlopen_ext"),
+        {
+            onEnter: function (args) {
+                var pathptr = args[0];
+                if (pathptr !== undefined && pathptr != null) {
+                    var path = ptr(pathptr).readCString();
+                    if (path.indexOf(soName) >= 0) {
+                        this.is_can_hook = true;
+                    }
+                }
+            },
+            onLeave: function (retval) {
+                if (this.is_can_hook) {
+                    hook_JNI_OnLoad()
+                }
+            }
+        }
+    );
+}
+ 
+function hook_JNI_OnLoad(){
+    let module = Process.findModuleByName("libmsaoaidsec.so")
+    Interceptor.attach(module.base.add(0xC6DC + 1), {
+        onEnter(args){
+            console.log("call JNI_OnLoad")
+        }
+    })
+}
+ 
+setImmediate(hook_dlopen, "libmsaoaidsec.so")
+并没有输出日志,那么说明检测的位置在JNI_OnLoad函数之前
+
+所以我需要hook .init_xxx的函数
+但这里有一个问题
+dlopen函数调用完成之后.init_xxx函数已经执行完成了
+这个时候不容易使用frida进行hook
+这个问题其实很麻烦的,因为你想要hook linker的call_function并不容易
+这里面涉及到linker的自举,我想到了一个取巧的办法,请看接下来的操作。
+首先在.init_proc函数中找一个调用了外部函数的位置,时机越早越好
+
+我选择了_system_property_get函数,接下来使用frida hook dlopen函数
+当加载libmsaoaidsec.so时
+在onEnter回调方法中hook _system_property_get函数,以"ro.build.version.sdk"字符串作为过滤器。
+如果_system_property_get函数被调用了
+那么这个时候也就是.init_proc函数刚刚调用的时候
+在这个时机点可以注入我想要的代码,具体实现如下：
+function hook_dlopen(soName = '') {
+    Interceptor.attach(Module.findExportByName(null, "android_dlopen_ext"),
+        {
+            onEnter: function (args) {
+                var pathptr = args[0];
+                if (pathptr !== undefined && pathptr != null) {
+                    var path = ptr(pathptr).readCString();
+                    if (path.indexOf(soName) >= 0) {
+                        locate_init()
+                    }
+                }
+            }
+        }
+    );
+}
+ 
+function locate_init() {
+    let secmodule = null
+    Interceptor.attach(Module.findExportByName(null, "__system_property_get"),
+        {
+            // _system_property_get("ro.build.version.sdk", v1);
+            onEnter: function (args) {
+                secmodule = Process.findModuleByName("libmsaoaidsec.so")
+                var name = args[0];
+                if (name !== undefined && name != null) {
+                    name = ptr(name).readCString();
+                    if (name.indexOf("ro.build.version.sdk") >= 0) {
+                        // 这是.init_proc刚开始执行的地方,是一个比较早的时机点
+                        // do something
+                    }
+                }
+            }
+        }
+    );
+}
+ 
+setImmediate(hook_dlopen, "libmsaoaidsec.so")
+在获取了一个非常早的注入时机之后,就可以定位具体的frida检测点了。
+网上对frida的检测通常会使用openat、open、strstr、pthread_create、snprintf、sprintf、readlinkat等一系列函数,从这里下手是一个不错的选择。
+我对pthread_create函数进行hook,打印一下新线程要执行的函数地址
+function hook_pthread_create(){
+    console.log("libmsaoaidsec.so --- " + Process.findModuleByName("libmsaoaidsec.so").base)
+    Interceptor.attach(Module.findExportByName("libc.so", "pthread_create"),{
+        onEnter(args){
+            let func_addr = args[2]
+            console.log("The thread function address is " + func_addr)
+        }
+    })
+}
+hook_pthread_create();
+这里面有两个线程是libmsaoaidsec.so创建的,对应的函数偏移分别是0x11129和0x10975
+绕过的方法很简单,直接nop掉pthread_create或者替换检测函数的代码逻辑都可以
+以下是完整代码：
+function hook_dlopen(soName = '') {
+    Interceptor.attach(Module.findExportByName(null, "android_dlopen_ext"),
+        {
+            onEnter: function (args) {
+                var pathptr = args[0];
+                if (pathptr !== undefined && pathptr != null) {
+                    var path = ptr(pathptr).readCString();
+                    if (path.indexOf(soName) >= 0) {
+                        locate_init()
+                    }
+                }
+            }
+        }
+    );
+}
+ 
+function locate_init() {
+    let secmodule = null
+    Interceptor.attach(Module.findExportByName(null, "__system_property_get"),
+        {
+            // _system_property_get("ro.build.version.sdk", v1);
+            onEnter: function (args) {
+                secmodule = Process.findModuleByName("libmsaoaidsec.so")
+                var name = args[0];
+                if (name !== undefined && name != null) {
+                    name = ptr(name).readCString();
+                    if (name.indexOf("ro.build.version.sdk") >= 0) {
+                        // 这是.init_proc刚开始执行的地方,是一个比较早的时机点
+                        // do something
+                        // hook_pthread_create()
+                        bypass()
+                    }
+                }
+            }
+        }
+    );
+}
+ 
+function hook_pthread_create() {
+    console.log("libmsaoaidsec.so --- " + Process.findModuleByName("libmsaoaidsec.so").base)
+    Interceptor.attach(Module.findExportByName("libc.so", "pthread_create"), {
+        onEnter(args) {
+            let func_addr = args[2]
+            console.log("The thread function address is " + func_addr)
+        }
+    })
+}
+ 
+function nop(addr) {
+    Memory.patchCode(ptr(addr), 4, code => {
+        const cw = new ThumbWriter(code, { pc: ptr(addr) });
+        cw.putNop();
+        cw.putNop();
+        cw.flush();
+    });
+}
+ 
+function bypass(){
+    let module = Process.findModuleByName("libmsaoaidsec.so")
+    nop(module.base.add(0x10AE4))
+    nop(module.base.add(0x113F8))
+}
+ 
+setImmediate(hook_dlopen, "libmsaoaidsec.so")
+反*反调试大致步骤如下：
+hook dlopen监控最后一个被加载的库;
+Hook pthread_create禁用检测线程
+内存覆盖NOP关键函数;
+
+
+
+如何检测 Ptrace 反调试？
+在逆向时,如何判断遇到的障碍是 ptrace 反调试？
+
+Frida 报错：使用 frida -U -F 附加时,出现 Error: attachment point unavailable 等类似错误。
+
+查看进程状态：
+
+bash
+ 
+adb shell
+su
+# 找到目标App的进程ID (PID)
+ps -A | grep <包名>
+# 查看该进程的TracerPid字段
+cat /proc/<PID>/status | grep -i tracerpid
+如果 TracerPid 的值不为 0,则表示该进程已经被其他进程跟踪（ptrace）,这就是反调试的证据。
+
+如果值为 0,则可能是其他类型的反调试。
+
+
