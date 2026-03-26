@@ -1,0 +1,40 @@
+//so文件export表中的jni静态注册函数，Java_com_example_test_nativeFunc，先测试是否调用了
+var addr = Module.findExportByName("libtest.so", "Java_com_example_test_nativeFunc");
+if (addr) {
+    Interceptor.attach(addr, {
+        onEnter: function(args) {
+            console.log("Hook triggered!");
+        }
+    });
+}
+
+
+//排除同名注册函数Hook RegisterNatives 观察
+//如果 RegisterNatives 注册了和导出符号同名的函数，且 fnPtr 不等于导出符号的地址，那么实际调用的是 fnPtr，而不是导出符号。你需要Hook那个 fnPtr。
+var RegisterNatives = Module.findExportByName("libart.so", "RegisterNatives");
+Interceptor.attach(RegisterNatives, {
+    onEnter: function(args) {
+        var env = args[0];
+        var clazz = args[1];
+        var methods = args[2];
+        var count = args[3].toInt32();
+        console.log("RegisterNatives called, class:", clazz);
+        // 打印注册的方法名和地址
+        for (var i = 0; i < count; i++) {
+            var method = methods.add(i * Process.pointerSize * 3);
+            var name = method.readPointer().readCString();
+            var sig = method.add(Process.pointerSize).readPointer().readCString();
+            var fnPtr = method.add(Process.pointerSize * 2).readPointer();
+            console.log(name, sig, fnPtr);
+        }
+    }
+});
+
+
+//找到实际函数地址后，直接用 Interceptor.replace 替换它即可。
+var realAddr = ptr("0x12345678"); // 从 RegisterNatives 打印得到的地址
+Interceptor.replace(realAddr, new NativeCallback(function(env, thiz) {
+    console.log("Bypass");
+    return 0; // 根据返回类型填默认值
+}, 'void', ['pointer', 'pointer']));
+
