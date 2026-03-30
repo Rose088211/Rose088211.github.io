@@ -1,0 +1,23 @@
+如果手机安装了面具, 如何默认强制连接USB调试
+把下面内容保持为a.sh 手机上root权限运行下
+/data/adb/magisk/busybox killall -9 adbd
+/data/adb/magisk/busybox killall -9 adbd
+a=/data/adb/magisk/magisk64
+$a resetprop service.adb.root 1
+$a resetprop ro.debuggable 1
+$a resetprop ro.adb.secure 0
+setprop service.adb.tcp.port 5555
+/apex/com.android.adbd/bin/adbd --root_seclabel=u:r:magisk:s0 &
+
+
+
+kernelsu用户
+/data/adb/ksu/bin/busybox killall -9 adbd
+/data/adb/ksu/bin/busybox killall -9 adbd
+a=/data/adb/ksu/bin/resetprop
+$a service.adb.root 1
+$a ro.debuggable 1
+$a ro.adb.secure 0
+setprop service.adb.tcp.port 5555
+setenforce 0
+stop adbd && start adbd
