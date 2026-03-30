@@ -1,0 +1,168 @@
+{
+  "流程名称": "iOS破解应用重签名实践（修正版）",
+  "描述": "基于脱壳IPA，使用有效的开发者证书和描述文件对应用进行重签名，以便在非越狱设备上安装运行的完整步骤。本流程详细修正了常见的模糊点和易错环节。",
+  "最后更新时间": "2026年",
+  "步骤": [
+    {
+      "步骤编号": 1,
+      "步骤名称": "获取脱壳IPA与签名材料",
+      "操作描述": "准备一个已脱壳的IPA文件，并获取可用的iOS开发者证书（.p12及其私钥）和对应的描述文件（.mobileprovision）。",
+      "子步骤": [
+        {
+          "内容": "从越狱设备或网络来源获取脱壳后的IPA（确认二进制已解密，cryptid=0）。"
+        },
+        {
+          "内容": "证书准备：在Mac上使用钥匙串访问生成CSR文件，打开Mac的「钥匙串访问」应用，
+          选择菜单栏：证书助理 → 从证书颁发机构请求证书，填写开发者邮箱和常用名称，选择「存储到磁盘」，生成.certSigningRequest文件；
+          登录 developer.apple.com
+          进入 Certificates, Identifiers & Profiles → Certificates，点击「+」添加新证书，根据用途选择类型：
+          iOS App Development：开发证书，用于真机调试。上传之前生成的CSR文件，点击生成，下载生成的.cer证书文件，双击.cer证书自动导入钥匙串
+          在钥匙串的「我的证书」中找到刚导入的证书（应包含对应的私钥）-右键点击证书 → 导出，选择.p12格式，设置导出密码——这就是可以分享给他人的“共享证书”
+          
+          
+          若得到别人分享的证书，将.p12文件双击导入Mac钥匙串，确保私钥可用。
+          通过命令 `security find-identity -v -p codesigning` 查看可用的签名身份，记下证书名称或SHA-1值。"
+        },
+        {
+          "内容": "描述文件准备：登录Apple Developer官网，在Certificates, Identifiers & Profiles中创建与目标应用匹配的描述文件。推荐使用通配符App ID（如 com.example.*）生成描述文件，以避免修改原始Bundle ID。若必须使用显式App ID，则需新建一个与原始ID不同的ID（如 com.example.newapp）。下载描述文件（embedded.mobileprovision）。"
+        }
+      ],
+      "注意事项": "证书必须包含私钥；描述文件需包含目标设备的UDID（若为开发或Ad Hoc类型）；通配符描述文件可免于修改Bundle ID，最大限度保留原功能。"
+    },
+    {
+      "步骤编号": 2,
+      "步骤名称": "提取并校验entitlements权限",
+      "操作描述": "从描述文件中提取权限信息，并与原应用实际所需的entitlements进行比对，确保一致。",
+      "子步骤": [
+        {
+          "内容": "解压IPA：`unzip YourApp.ipa -d extracted/`，得到Payload/YourApp.app目录。"
+        },
+        {
+          "内容": "从描述文件提取entitlements：\n```bash\nsecurity cms -D -i embedded.mobileprovision > temp.plist\n/usr/libexec/PlistBuddy -x -c 'Print :Entitlements' temp.plist > entitlements.plist\n```"
+        },
+        {
+          "内容": "查看原应用二进制中实际使用的entitlements（这反映了应用运行所需的最小权限集）：\n```bash\ncodesign -d --entitlements - "Payload/YourApp.app/YourApp" 2>/dev/null\n```"
+        },
+        {
+          "内容": "对比两者：确保entitlements.plist包含原应用所需的所有权限键值对。如果缺少（如com.apple.security.application-groups、keychain-access-groups），需在开发者后台开启对应功能（如App Groups）并重新生成描述文件，或手动将缺失条目补入entitlements.plist（需确保描述文件支持）。"
+        }
+      ],
+      "注意事项": "entitlements不匹配是安装后闪退的最常见原因之一。务必使签名时使用的entitlements文件包含应用运行所必需的所有权限。"
+    },
+    {
+      "步骤编号": 3,
+      "步骤名称": "处理Bundle ID（如需修改）",
+      "操作描述": "如果描述文件对应的App ID与原始Bundle ID不匹配，需要修改应用及其扩展的Bundle ID。若使用了通配符描述文件且原始Bundle ID符合通配符模式，可跳过此步。",
+      "子步骤": [
+        {
+          "内容": "确定目标Bundle ID：若使用显式App ID，新ID为创建App ID时指定的值（如 com.example.newapp）。"
+        },
+        {
+          "内容": "修改主应用Bundle ID：编辑 `Payload/YourApp.app/Info.plist`，将 `CFBundleIdentifier` 的值改为新ID：\n```bash\n/usr/libexec/PlistBuddy -c \"Set :CFBundleIdentifier com.example.newapp\" Payload/YourApp.app/Info.plist\n```"
+        },
+        {
+          "内容": "修改所有App Extension的Bundle ID（如果有）：在 `Payload/YourApp.app/PlugIns/` 下可能有一个或多个 `.appex` 目录，对每个目录中的 `Info.plist`，将其 `CFBundleIdentifier` 修改为以主ID为前缀的合法ID（例如主ID为 `com.example.newapp`，扩展ID可为 `com.example.newapp.widget`）。"
+        },
+        {
+          "内容": "注意：修改Bundle ID可能导致原应用中硬编码该ID的功能（如钥匙串共享、App Groups、URL Scheme、第三方SDK）失效。如需保留这些功能，必须同步修改相关的配置（如App Groups ID需在开发者后台重新创建并加入描述文件）。"
+        }
+      ],
+      "注意事项": "优先使用通配符描述文件避免修改ID；若必须修改，务必同步处理所有扩展，并考虑功能影响。"
+    },
+    {
+      "步骤编号": 4,
+      "步骤名称": "移除旧签名文件",
+      "操作描述": "删除应用包内原有的签名信息，因为旧签名与新证书不兼容。",
+      "子步骤": [
+        {
+          "内容": "递归删除所有 `_CodeSignature` 目录：\n```bash\nfind Payload/YourApp.app -type d -name "_CodeSignature" -exec rm -rf {} +\n```"
+        },
+        {
+          "内容": "删除可能存在的 `CodeResources` 文件（通常位于主目录和框架目录下）：\n```bash\nfind Payload/YourApp.app -type f -name "CodeResources" -exec rm -f {} +\n```"
+        },
+        {
+          "内容": "如果应用包含 `Frameworks` 或 `PlugIns`，确保其中每个 `.framework` 或 `.appex` 的签名也被清除。上述命令已递归处理。"
+        }
+      ],
+      "注意事项": "不要删除其他资源文件。清除签名是必须的，否则codesign会报错。"
+    },
+    {
+      "步骤编号": 5,
+      "步骤名称": "签名所有可执行文件",
+      "操作描述": "使用codesign命令对应用主二进制、内嵌动态库、App扩展等进行签名，遵循从内到外的顺序。",
+      "子步骤": [
+        {
+          "内容": "准备证书标识：使用命令 `security find-identity -v -p codesigning` 获取证书名称（如 \"iPhone Distribution: YourName (XXXXXXXXXX)\"）。"
+        },
+        {
+          "内容": "签名动态库（位于 `Frameworks` 目录下的 `.dylib` 或 `.framework`）：\n```bash\ncodesign -f -s "证书名称" Payload/YourApp.app/Frameworks/*\n```\n若框架本身是一个bundle，可能需要使用 `--deep`，但通常逐个签名更可控。"
+        },
+        {
+          "内容": "签名App Extension（位于 `PlugIns` 目录）：每个扩展可能需要自己的entitlements。可从原扩展二进制提取其entitlements，或直接使用主entitlements（需确保兼容）。推荐为每个扩展提取独立entitlements：\n```bash\ncodesign -d --entitlements - "Payload/YourApp.app/PlugIns/xxx.appex" 2>/dev/null > ext_entitlements.plist\n```\n然后签名扩展：\n```bash\nfor ext in Payload/YourApp.app/PlugIns/*.appex; do\n    codesign -f -s "证书名称" --entitlements ext_entitlements.plist "$ext"\ndone\n```\n如果提取失败或为空，可直接使用主entitlements。"
+        },
+        {
+          "内容": "最后签名主应用二进制：\n```bash\ncodesign -f -s "证书名称" --entitlements entitlements.plist Payload/YourApp.app\n```"
+        }
+      ],
+      "注意事项": "签名顺序：先内部后外部。每个签名操作都必须指定正确的entitlements文件，尤其是扩展可能依赖独立的权限。确保所有可执行文件（包括Watch App、Sticker Pack等）都被签名。"
+    },
+    {
+      "步骤编号": 6,
+      "步骤名称": "验证签名有效性",
+      "操作描述": "使用codesign命令验证整个应用包的签名完整性和正确性。",
+      "子步骤": [
+        {
+          "内容": "执行完整性验证：\n```bash\ncodesign --verify -vv Payload/YourApp.app\n```\n若输出 \"valid on disk\" 和 \"satisfies its Designated Requirement\"，则签名有效。"
+        },
+        {
+          "内容": "检查签名信息：\n```bash\ncodesign -dvv Payload/YourApp.app\n```\n输出应显示证书链和entitlements。"
+        },
+        {
+          "内容": "可选：检查描述文件是否嵌入正确：\n```bash\nsecurity cms -D -i Payload/YourApp.app/embedded.mobileprovision\n```\n确认其中的App ID、设备等符合预期。"
+        }
+      ],
+      "注意事项": "验证应无任何错误或警告。若有问题，根据提示调整签名参数。"
+    },
+    {
+      "步骤编号": 7,
+      "步骤名称": "重新打包为IPA",
+      "操作描述": "将签名后的Payload文件夹压缩为IPA文件，准备安装。",
+      "子步骤": [
+        {
+          "内容": "切换到Payload所在目录，执行打包：\n```bash\ncd extracted\nzip -qr ../ResignedApp.ipa Payload/\n```\n或使用ditto命令确保纯净：\n```bash\nditto -c -k --sequesterRsrc --keepParent Payload ResignedApp.ipa\n```"
+        }
+      ],
+      "注意事项": "打包前确保Payload目录内无多余文件（如.DS_Store）。最终IPA应能被正常安装。"
+    },
+    {
+      "步骤编号": 8,
+      "步骤名称": "安装测试",
+      "操作描述": "将生成的IPA安装到目标设备，验证应用能否正常运行及破解功能是否生效。",
+      "子步骤": [
+        {
+          "内容": "使用Xcode安装：打开Xcode → Window → Devices and Simulators，将设备连接，在Installed Apps区域点击“+”选择IPA文件安装。"
+        },
+        {
+          "内容": "使用第三方工具：如 ideviceinstaller（命令行）或 Apple Configurator 2。"
+        },
+        {
+          "内容": "若安装失败或闪退，查看设备日志：Xcode → Window → Devices and Simulators，选择设备，点击底部的控制台图标查看实时日志。常见崩溃原因包括：entitlements缺失、动态库签名错误、Bundle ID冲突、缺少所需框架等。"
+        },
+        {
+          "内容": "验证破解功能：启动应用，测试hook或修改是否生效（如绕过登录、解锁内购）。"
+        }
+      ],
+      "注意事项": "测试时确保设备UDID在描述文件中（若为开发/Ad Hoc证书）。企业证书签名的应用需在设置中信任描述文件。"
+    }
+  ],
+  "补充说明": "本流程仅用于安全研究和学习，请勿用于非法用途。尊重开发者知识产权，支持正版应用。"
+}
+
+iOS应用逆向工程如下：
+1.正常应用上架到App store之前会完成iOS 双层加密机制。
+iOS端App在上线之前会由苹果商店进行FairPlayDRM数字版权加密保护（简称“加壳”）。
+要对应用进行分析，就必须先解密（成为“脱壳”），从而得到原始未加密的二进制文件。
+
+macos中使用otool工具即可查看应用是否已经脱壳,cryptid=1表示已加壳，cryptid=0表示未加壳。
+![alt text](image-41.png)
+otool -l xxtx| grep crypt
