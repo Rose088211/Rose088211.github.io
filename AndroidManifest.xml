@@ -1,0 +1,30 @@
+特征：
+<application>标签的android:name属性通常是以下几种情况:
+第一类默认设置：
+<application
+    android:icon="@mipmap/ic_launcher"
+    android:label="@string/app_name"
+    ...>
+
+第二类开发者自定义：
+<application
+    android:name=".MyApplication"                    # 相对路径
+    #android:name="com.example.app.MyApplication"    # 全限定名
+    android:icon="@mipmap/ic_launcher"
+    android:label="@string/app_name"
+    ...>
+
+第三类第三方库Application类:
+<application
+    android:name="androidx.multidex.MultiDexApplication"    # MultiDex支持
+    android:name="com.facebook.drawee.backends.pipeline.FrescoApplication"  # Fresco
+    android:name="io.flutter.app.FlutterApplication"        # Flutter
+    android:name="com.google.android.gms.ads.MobileAdsInitProvider"  # Admob
+>
+
+
+检查lib目录:
+unzip -l your_app.apk | grep ".so"
+
+
+
