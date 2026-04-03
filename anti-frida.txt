@@ -1,0 +1,56 @@
+1. 启动frida服务端后，约7秒应用进程crash  ---> D-BUS（通信协议握手特征） 
+绕过方式：
+hook返回值函数
+网络层检测则需要更换frida版本
+
+2. ptrace技术（自附加）--->如果 Frida 保持附加状态，App 随后的 ptrace​ 调用会失败，App 依然会发现并退出。
+https://github.com/chroblert/JC-AntiPtrace
+
+
+2.1双进程保护
+绕过方式：-f
+
+
+
+ptrace反调试原理：
+pthread_create是创建反检测线程，检查ptrace技术的附加调试调用。
+绕过方式：
+在 Frida 注入完成后，立刻 hook libc.so 中的 ptrace 函数，修改其返回值，让反检测代码认为没有被调试;
+还需要 hook open/read 来伪装 /proc/self/status 的内容;
+或者也可以阻止创建反调试线程(保留线程，hook关键线程函数，跳过函数执行).
+
+3. pc端hook注入进程，约2秒应用进程crash   
+---> 
+跨进程检测：
+proc（Android5.1以上无效） 
+/proc/pid/maps（内存映射信息）  
+/proc/pid/task/tid/status（显示线程状态和内存统计）
+/proc/pid/fd/（进程当前打开的所有文件描述符-strongR or version>=16-） 
+
+自身进程自检测：
+/proc/self/status(Traceid !=0)
+/proc/self/maps
+/proc/self/fd/
+/proc/self/task/[tid]/comm
+/proc/self/task/[tid]/status
+/proc/self/environ
+/proc/self/cmdline
+/proc/self/auxv
+/proc/self/mem
+
+端口扫描：
+/proc/net/tcp和/proc/net/tcp6（如果修改 Frida Server 的监听端口，那么就不会出现 :69a2）  
+
+已知文件执行：
+/data/local/tmp/frida-server(chmod 755 777)
+
+初始化信号比对：
+信号处理函数signal(setImmediate延迟执行)
+
+4.内存中函数前 N 个字节的CRC32比对--->Hook libc.so​ 中的 memcmp​ 函数  
+
+
+
+以上检测方法皆是使用系统函数读取文件和进行检测 open、openat && readlink​、readlinkat（描述符）；IO 重定向 方案是通解
+todo：
+检测类加载时立即hook其方法
