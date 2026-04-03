@@ -1,0 +1,104 @@
+{
+  "major_changes": [
+    {
+      "version_series": "17.x",
+      "time_range": "2025年8月至今",
+      "key_changes": [
+        "API重大重构：移除Legacy-style Enumeration APIs，Memory Read/Write API现代化，Module静态API移除",
+        "Android架构重写：17.6版本采用Zymbiote注入机制，重写Zygote Hook",
+        "eBPF集成：17.9.0引入Linux eBPF spawn gater，增强反检测能力",
+        "桥接模块解耦：frida-java-bridge等桥接模块从GumJS中拆分，需手动引入"
+      ]
+    },
+    {
+      "version_series": "16.x",
+      "time_range": "约2023-2025年",
+      "key_changes": [
+        "异步设备管理：彻底移除frida.get_device_manager()等同步API，需使用frida.enumerate_devices()+await",
+        "frida-tools适配：需使用frida-tools 12.0.0+版本兼容",
+        "iOS模拟器支持改进：16.2.2修复rootless越狱环境模块加载问题"
+      ]
+    },
+    {
+      "version_series": "15.x",
+      "time_range": "约2022-2024年",
+      "key_changes": [
+        "稳定性提升：修复多个bug，提高兼容性",
+        "版本兼容性：frida-tools 10.5.2-12.0.0对应此版本范围",
+        "编译环境要求：需要特定Node.js和NDK版本"
+      ]
+    },
+    {
+      "version_series": "14.x",
+      "time_range": "约2021-2023年",
+      "key_changes": [
+        "JavaScript引擎切换：14.0引入QuickJS作为默认引擎（内存占用为V8的1/5），14.3切回V8",
+        "用户接口改进：hook过程更直观易懂",
+        "Android版本适配：Android 9.0+推荐使用14.0+版本",
+        "Stalker增强：14.0开始较好支持arm64架构"
+      ]
+    },
+    {
+      "version_series": "13.x",
+      "time_range": "约2020-2021年",
+      "key_changes": [
+        "安全性增强：使用新加密机制"
+      ]
+    },
+    {
+      "version_series": "12.x",
+      "time_range": "约2019-2020年",
+      "key_changes": [
+        "动态代码注入能力提升：引入更强大的注入功能",
+        "Android版本适配：Android 5-6使用12.3.6，Android 7-8使用12.8.0"
+      ]
+    }
+  ],
+  "compatibility_recommendations": {
+    "android_version_adaptation": [
+      {
+        "android_version": "5-6",
+        "recommended_frida": "12.3.6",
+        "python_version": "3.7"
+      },
+      {
+        "android_version": "7-8",
+        "recommended_frida": "12.8.0",
+        "python_version": "3.8"
+      },
+      {
+        "android_version": "9.0+",
+        "recommended_frida": "14.0+",
+        "python_version": "3.8"
+      }
+    ],
+    "frida_tools_version_correspondence": [
+      {
+        "frida_version": "15.x",
+        "frida_tools_version": "10.5.2-12.0.0"
+      },
+      {
+        "frida_version": "16.x",
+        "frida_tools_version": "12.0.1-12.3.0"
+      },
+      {
+        "frida_version": "17.x",
+        "frida_tools_version": "14.0.0+"
+      }
+    ],
+    "major_architectural_changes": [
+      {
+        "version": "17.0.0",
+        "change": "API现代化重构，需更新脚本语法"
+      },
+      {
+        "version": "16.0.0",
+        "change": "设备管理API异步化，需更新Python代码"
+      },
+      {
+        "version": "14.0.0",
+        "change": "JavaScript引擎切换，影响性能和内存使用"
+      }
+    ]
+  }
+}
