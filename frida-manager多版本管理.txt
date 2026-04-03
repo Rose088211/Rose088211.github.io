@@ -1,0 +1,7 @@
+//进入目标目录frida-manager：path
+cd path
+python -m venv frida_16.2.1_arm64
+
+//启动&退出
+.\Scripts\Activate.ps1   # 激活
+deactivate               # 退出
