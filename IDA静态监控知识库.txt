@@ -1,0 +1,41 @@
+//author: Rose0882
+//time: 2026-04-10 17:56:54.448618
+ida text view:所在段：虚拟地址  标签（类似函数名、变量）  指令  操作数（指令参数）  注释（交叉引用）
+			
+			查找strings Windows字符所在段 start：
+				按 Ctrl+S 打开段列表
+				找到包含该地址的段（地址在 Start 和 End 之间）
+				该行的 Start 列 = 基址，虚拟地址 - 该段start基址 = 该段start段内偏移
+				
+			查找 Functions Windows函数所在段：
+				按 Ctrl+S 打开段列表
+				代码在 .text 段，外部函数在 .plt 段。这能快速判断函数类型和大致行为。
+				lenth R
+			
+			用“段内偏移”对抗 ASLR（每次运行时随机基址重置）：
+				//TODO ::
+				//抢占先机，Hook 初始化函数
+				//精确拦截检测线程
+				// 1. 获取 so 基址
+				var base = Module.findBaseAddress("libtest.so");
+				if (base) {
+					// 2. 计算实际 Hook 地址
+					var targetAddr = base.add(0x1234);
+					console.log("[+] Hooking at:", targetAddr);
+					
+					// 3. 修改内存页属性（仅当目标函数在只读段时需要）
+					Memory.protect(targetAddr, 4, 'rwx');
+
+					// 4. 进行 Hook
+					Interceptor.attach(targetAddr, {
+						onEnter: function(args) { 
+							console.log("[+] Function entered. Args:", args[0]); 
+						},
+						onLeave: function(retval) { 
+							console.log("[+] Function left. Ret:", retval);
+						}
+					});
+				} else {
+					console.log("[-] libtest.so not found.");
+				}
+		
