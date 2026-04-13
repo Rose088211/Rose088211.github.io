@@ -1,7 +1,7 @@
 //author: Rose0882 
 //time: 2026-04-13 15:09:39.005837
 {
-  "title": "Android逆向完整学习指南",
+  "title": "Android逆向完整学习指南（整合修订版）",
   "version": "1.0",
   "sections": [
     {
@@ -10,15 +10,51 @@
       "subsections": [
         {
           "subtitle": "1. Java / Kotlin",
-          "content": "字节码：Java/Kotlin 源码编译后生成 .class 文件，包含 Java 字节码。Android 中进一步转换为 DEX 字节码（Dalvik Executable）。理解字节码是理解混淆、加密、指令抽取/回填的基础。关键指令：invoke-virtual、invoke-static、iget、iput、const 等。反射：允许运行时动态获取类、方法、字段并调用/修改。在逆向中常用于绕过隐藏 API 限制、动态调用脱壳函数。关键 API：Class.forName()、Method.invoke()、Field.setAccessible(true)。类加载器：ClassLoader 负责将 DEX 文件加载到内存并解析成 Class 对象。- PathClassLoader：加载已安装 APK 的 DEX（/data/app/...）。- DexClassLoader：加载外部 DEX/JAR（常用于热修复、插件化）。理解双亲委派模型和如何绕过它（如自定义 ClassLoader 实现 dex 动态加载）。多线程：Android 主线程（UI 线程）不能阻塞，Handler、Looper、MessageQueue、AsyncTask、ThreadPool。逆向中分析 ANR 或同步问题时常需要理清线程模型。JNI（Java Native Interface）：Java 调用 C/C++ 的桥梁。关键函数：FindClass、GetMethodID、CallVoidMethod、NewStringUTF。逆向中常遇到 native 方法声明，其实现位于 SO 中。JNIEnv 函数表也是 Hook 点。"
+          "content": "
+		  字节码：Java/Kotlin 源码编译后生成 .class 文件，包含 Java 字节码。Android 中进一步转换为 DEX 字节码（Dalvik Executable）。理解字节码是理解混淆、加密、指令抽取/回填的基础。
+		  关键指令：invoke-virtual、invoke-static、iget、iput、const 等。
+		  反射：允许运行时动态获取类、方法、字段并调用/修改。在逆向中常用于绕过隐藏 API 限制、动态调用脱壳函数。
+		  关键 API：Class.forName()、Method.invoke()、Field.setAccessible(true)。
+		  类加载器：ClassLoader 负责将 DEX 文件加载到内存并解析成 Class 对象。
+			- PathClassLoader：加载已安装 APK 的 DEX（/data/app/...）。
+			- DexClassLoader：加载外部 DEX/JAR（常用于热修复、插件化）。理解双亲委派模型和如何绕过它（如自定义 ClassLoader 实现 dex 动态加载）。
+		  多线程：Android 主线程（UI 线程）不能阻塞，Handler、Looper、MessageQueue、AsyncTask、ThreadPool。逆向中分析 ANR 或同步问题时常需要理清线程模型。
+		  JNI（Java Native Interface）：Java 调用 C/C++ 的桥梁。
+		  关键函数：FindClass、GetMethodID、CallVoidMethod、NewStringUTF。逆向中常遇到 native 方法声明，其实现位于 SO 中。JNIEnv 函数表也是 Hook 点。"
         },
         {
           "subtitle": "2. C / C++",
-          "content": "指针与内存管理：指针运算、二级指针、函数指针。动态内存分配（malloc/free、new/delete）与内存泄漏。理解栈（局部变量）和堆的区别。函数调用约定：- cdecl（C Declaration）：参数从右向左入栈，调用者清理栈。常见于 x86。- stdcall：参数从右向左入栈，被调用者清理栈（Windows API）。- ARM 调用约定：  * ARM32：参数优先通过 R0-R3 传递，其余用栈。返回值在 R0。  * ARM64：参数优先通过 X0-X7 传递，其余用栈。返回值在 X0。理解调用约定才能正确解析反汇编代码中的参数传递。虚函数表（vtbl）：C++ 多态的实现机制。每个包含虚函数的类有一个虚表指针（vptr），指向虚函数表。逆向时通过识别 vptr 可以恢复类层次结构。其他关键概念：结构体对齐、位域、volatile、setjmp/longjmp、信号处理函数。"
+          "content": "
+		  指针与内存管理：指针运算、二级指针、函数指针。动态内存分配（malloc/free、new/delete）与内存泄漏。理解栈（局部变量）和堆的区别。
+		  函数调用约定：
+			- cdecl（C Declaration）：参数从右向左入栈，调用者清理栈。常见于 x86。
+			- stdcall：参数从右向左入栈，被调用者清理栈（Windows API）。
+			- ARM 调用约定：  
+				* ARM32：参数优先通过 R0-R3 传递，其余用栈。返回值在 R0。  
+				* ARM64：参数优先通过 X0-X7 传递，其余用栈。返回值在 X0。理解调用约定才能正确解析反汇编代码中的参数传递。
+		  虚函数表（vtbl）：C++ 多态的实现机制。每个包含虚函数的类有一个虚表指针（vptr），指向虚函数表。逆向时通过识别 vptr 可以恢复类层次结构。
+		  其他关键概念：结构体对齐、位域、volatile、setjmp/longjmp、信号处理函数。
+		  "
         },
         {
           "subtitle": "3. 汇编语言（ARM32 / ARM64 / x86_64）",
-          "content": "（1）ARM32 汇编要点- 指令集：MOV、ADD、SUB、LDR（加载）、STR（存储）。- 跳转：B（无条件）、BL（带返回）、BX/BLX（模式切换）。- 条件执行：EQ、NE、GT 等后缀（例如 MOVEQ）。- 栈操作：PUSH/POP（或 STMFD/LDMFD）。- 寄存器：R0-R12 通用，R13(SP) 栈指针，R14(LR) 链接寄存器，R15(PC) 程序计数器，CPSR 状态寄存器。- 栈帧结构：入口 push {fp, lr}，mov fp, sp；出口 pop {fp, pc}。（2）ARM64 汇编要点- 定长指令（4 字节）。- 常见指令：MOV、LDR/STR、LDP/STP（双字）、ADD/SUB、MUL、AND/ORR、CMP、B/BL/BR、RET。- 寄存器：X0-X30（64位），W0-W30（低32位），SP（栈指针），LR（X30），PC（程序计数器）。- 调用约定：参数 X0-X7，返回值 X0。被调用者保存 X19-X29，调用者保存 X9-X15。- 栈帧示例：  sub     sp, sp, #32  stp     x29, x30, [sp, #16]  add     x29, sp, #16  ...  ldp     x29, x30, [sp, #16]  add     sp, sp, #32  ret（3）x86_64 汇编要点（用于分析壳）- 变长指令，常见指令：MOV、LEA、ADD/SUB、IMUL、CMP/TEST、Jcc（条件跳转）、CMOVcc（条件移动）、CALL/RET。- 寄存器：RAX、RBX、RCX、RDX、RSI、RDI、RSP、RBP、R8-R15。- 调用约定（System V AMD64）：参数 RDI, RSI, RDX, RCX, R8, R9，返回值 RAX。- 注意 LEA 只计算地址，不访问内存；TEST REG, REG 等价于 CMP REG, 0。- 栈操作：PUSH/POP 自动调整 RSP。"
+          "content": "
+		  （1）ARM32 汇编要点- 指令集：MOV、ADD、SUB、LDR（加载）、STR（存储）。
+				- 跳转：B（无条件）、BL（带返回）、BX/BLX（模式切换）。
+				- 条件执行：EQ、NE、GT 等后缀（例如 MOVEQ）。
+				- 栈操作：PUSH/POP（或 STMFD/LDMFD）。
+				- 寄存器：R0-R12 通用，R13(SP) 栈指针，R14(LR) 链接寄存器，R15(PC) 程序计数器，CPSR 状态寄存器。
+				- 栈帧结构：入口 push {fp, lr}，mov fp, sp；出口 pop {fp, pc}。
+		  （2）ARM64 汇编要点- 定长指令（4 字节）。
+				-常见指令：MOV、LDR/STR、LDP/STP（双字）、ADD/SUB、MUL、AND/ORR、CMP、B/BL/BR、RET。
+				- 寄存器：X0-X30（64位），W0-W30（低32位），SP（栈指针），LR（X30），PC（程序计数器）。
+				- 调用约定：参数 X0-X7，返回值 X0。被调用者保存 X19-X29，调用者保存 X9-X15。
+				- 栈帧示例：  sub     sp, sp, #32  stp     x29, x30, [sp, #16]  add     x29, sp, #16  ...  ldp     x29, x30, [sp, #16]  add     sp, sp, #32  ret（3）x86_64 汇编要点（用于分析壳）
+				- 变长指令，常见指令：MOV、LEA、ADD/SUB、IMUL、CMP/TEST、Jcc（条件跳转）、CMOVcc（条件移动）、CALL/RET。
+				- 寄存器：RAX、RBX、RCX、RDX、RSI、RDI、RSP、RBP、R8-R15。
+				- 调用约定（System V AMD64）：参数 RDI, RSI, RDX, RCX, R8, R9，返回值 RAX。
+				- 注意 LEA 只计算地址，不访问内存；TEST REG, REG 等价于 CMP REG, 0。
+				- 栈操作：PUSH/POP 自动调整 RSP。"
         }
       ]
     },
@@ -28,15 +64,39 @@
       "subsections": [
         {
           "subtitle": "1. 操作系统原理",
-          "content": "进程与线程：进程是资源分配单位，线程是调度单位。Android 中每个 App 运行在独立进程（通常），Zygote 通过 fork() 快速创建新进程。线程共享进程内存，需要同步机制（互斥锁、条件变量）。内存管理：- 虚拟内存：每个进程拥有独立的 4GB（32位）或更大地址空间，通过 MMU 映射到物理内存。- 分页：4KB 页面，缺页异常、页面置换。- mmap：将文件或设备映射到内存，用于加载 DEX/SO、匿名共享内存（ashmem）。用户态与内核态：系统调用（syscall）是切换到内核态的唯一入口。Android 的 Binder、open、read 最终都会陷入内核。ptrace 需要内核支持。信号机制：SIGSEGV（段错误）、SIGTRAP（断点）、SIGKILL。逆向中用于动态调试或反调试（如检测 ptrace）。"
+          "content": "
+		  进程与线程：进程是资源分配单位，线程是调度单位。Android 中每个 App 运行在独立进程（通常），Zygote 通过 fork() 快速创建新进程。线程共享进程内存，需要同步机制（互斥锁、条件变量）。
+		  内存管理：
+		  - 虚拟内存：每个进程拥有独立的 4GB（32位）或更大地址空间，通过 MMU 映射到物理内存。
+		  - 分页：4KB 页面，缺页异常、页面置换。
+		  - mmap：将文件或设备映射到内存，用于加载 DEX/SO、匿名共享内存（ashmem）。
+		  用户态与内核态：系统调用（syscall）是切换到内核态的唯一入口。Android 的 Binder、open、read 最终都会陷入内核。ptrace 需要内核支持。
+		  信号机制：SIGSEGV（段错误）、SIGTRAP（断点）、SIGKILL。逆向中用于动态调试或反调试（如检测 ptrace）。
+		  "
         },
         {
           "subtitle": "2. Linux 基础",
-          "content": "文件系统与权限：/data、/system、/proc。inode 存储文件元数据。权限位（rwxr-x---）、chmod、chown。SELinux 上下文（Android 4.3+ 强制）。/proc 文件系统：/proc/[pid]/maps（内存映射）、/proc/[pid]/mem（内存数据）、/proc/[pid]/status（进程状态）。逆向中常通过读取 maps 判断 SO/DEX 加载基址。IPC 基础：- Socket：本地 UNIX domain socket（/dev/socket/zygote）。- 信号：SIGUSR1 等自定义信号。- 管道、消息队列、共享内存。Android 特有 Binder 也是基于内核驱动。动态链接器：/system/bin/linker（32位）或 linker64。负责加载 SO 文件、解析符号依赖、重定位（PLT/GOT）。了解其工作流程才能实现 inlineHook 或 plt hook。"
+          "content": "
+		  文件系统与权限：/data、/system、/proc。inode 存储文件元数据。权限位（rwxr-x---）、chmod、chown。SELinux 上下文（Android 4.3+ 强制）。
+		  /proc 文件系统：/proc/[pid]/maps（内存映射）、/proc/[pid]/mem（内存数据）、/proc/[pid]/status（进程状态）。逆向中常通过读取 maps 判断 SO/DEX 加载基址。
+		  IPC 基础：
+			- Socket：本地 UNIX domain socket（/dev/socket/zygote）。
+			- 信号：SIGUSR1 等自定义信号。
+			- 管道、消息队列、共享内存。Android 特有 Binder 也是基于内核驱动。
+		  动态链接器：/system/bin/linker（32位）或 linker64。负责加载 SO 文件、解析符号依赖、重定位（PLT/GOT）。了解其工作流程才能实现 inlineHook 或 plt hook。"
         },
         {
           "subtitle": "3. 编译与链接原理",
-          "content": "目标文件（.o）：可重定位文件，包含代码段、数据段、符号表、重定位表。ELF 文件格式：- ELF 头：e_ident、e_type（可执行/共享对象）、e_machine（ARM）、e_entry（入口点）。- 节区头表：描述各个节（.text、.data、.rodata、.bss、.dynsym、.plt、.got）。- 程序头表：描述段（LOAD、DYNAMIC），用于加载器映射到内存。符号表与重定位：- 符号：函数名、全局变量名，有绑定类型（LOCAL/GLOBAL/WEAK）。- 重定位：链接时修正地址。动态重定位（.rel.dyn/.rel.plt）用于加载时修正 GOT 表项。动态链接：- PLT（过程链接表）：延迟绑定，第一次调用时通过动态链接器解析真实地址。- GOT（全局偏移表）：存储实际函数地址。inlineHook 可以通过修改 GOT 表项实现函数劫持。"
+          "content": "
+		  目标文件（.o）：可重定位文件，包含代码段、数据段、符号表、重定位表。ELF 文件格式：
+			- ELF 头：e_ident、e_type（可执行/共享对象）、e_machine（ARM）、e_entry（入口点）。
+			-节区头表：描述各个节（.text、.data、.rodata、.bss、.dynsym、.plt、.got）。
+			-程序头表：描述段（LOAD、DYNAMIC），用于加载器映射到内存。
+		  符号表与重定位：
+			- 符号：函数名、全局变量名，有绑定类型（LOCAL/GLOBAL/WEAK）。
+			- 重定位：链接时修正地址。动态重定位（.rel.dyn/.rel.plt）用于加载时修正 GOT 表项。动态链接：
+			- PLT（过程链接表）：延迟绑定，第一次调用时通过动态链接器解析真实地址。
+			- GOT（全局偏移表）：存储实际函数地址。inlineHook 可以通过修改 GOT 表项实现函数劫持。"
         }
       ]
     },
@@ -46,19 +106,33 @@
       "subsections": [
         {
           "subtitle": "1. Android 系统架构",
-          "content": "四层：应用层（App）、框架层（Java API）、运行时层（ART/Dalvik + Native 库）、内核层（Linux + Binder/Ashmem 等驱动）。Binder：主流 IPC，基于 C/S 架构，使用 ioctl 与 /dev/binder 通信。一次 Binder 调用涉及 Client、Server、ServiceManager 和 Binder 驱动。匿名共享内存（Ashmem）：通过 mmap 映射同一块物理内存到不同进程，用于传递大块数据（如 Bitmap）。"
+          "content": "
+      四层：应用层（App）、框架层（Java API）、运行时层（ART/Dalvik + Native 库）、内核层（Linux + Binder/Ashmem 等驱动）。
+      Binder：主流 IPC，基于 C/S 架构，使用 ioctl 与 /dev/binder 通信。一次 Binder 调用涉及 Client、Server、ServiceManager 和 Binder 驱动。
+      匿名共享内存（Ashmem）：通过 mmap 映射同一块物理内存到不同进程，用于传递大块数据（如 Bitmap）。"
         },
         {
           "subtitle": "2. Android 组件与生命周期",
-          "content": "Activity：onCreate → onStart → onResume → onPause → onStop → onDestroy。启动过程涉及 AMS、ApplicationThread、ActivityThread。Service：两种启动方式——startService（独立运行）和 bindService（绑定获得 Binder）。BroadcastReceiver：静态注册（AndroidManifest.xml）与动态注册（registerReceiver）。发送广播通过 Binder 传给 AMS，再分发给接收者。ContentProvider：基于 Binder，用于跨进程数据共享。query、insert、update、delete。"
+          "content": "
+    Activity：onCreate → onStart → onResume → onPause → onStop → onDestroy。启动过程涉及 AMS、ApplicationThread、ActivityThread。
+    Service：两种启动方式——startService（独立运行）和 bindService（绑定获得 Binder）。
+    BroadcastReceiver：静态注册（AndroidManifest.xml）与动态注册（registerReceiver）。发送广播通过 Binder 传给 AMS，再分发给接收者。
+    ContentProvider：基于 Binder，用于跨进程数据共享。query、insert、update、delete。"
         },
         {
           "subtitle": "3. Context",
-          "content": "Context 抽象类：提供资源、启动组件、获取系统服务的能力。- Application Context：单例，生命周期跟随进程。- Activity Context：跟随 Activity 生命周期，可处理 UI。attachBaseContext 在 Application 中最早被调用，常用于插件化初始化或热修复。"
+          "content": "
+        Context 抽象类：提供资源、启动组件、获取系统服务的能力。
+    - Application Context：单例，生命周期跟随进程。
+    - Activity Context：跟随 Activity 生命周期，可处理 UI。attachBaseContext 在 Application 中最早被调用，常用于插件化初始化或热修复。"
         },
         {
           "subtitle": "4. 签名与权限",
-          "content": "签名：v1（Jar 签名，基于证书文件）、v2（全文件签名，APK 签名块）、v3（支持密钥轮换）。签名校验在 PackageManagerService 中。权限：普通（安装即授予）、危险（运行时申请）、签名（相同签名可授权）。PMS 管理权限分配和检查。checkPermission 调用在系统服务侧。AndroidManifest.xml：声明组件、权限、应用元数据。安装时解析并注册到 PMS。"
+          "content": "
+        签名：v1（Jar 签名，基于证书文件）、v2（全文件签名，APK 签名块）、v3（支持密钥轮换）。签名校验在 PackageManagerService 中。
+        权限：普通（安装即授予）、危险（运行时申请）、签名（相同签名可授权）。PMS 管理权限分配和检查。checkPermission 调用在系统服务侧。
+        AndroidManifest.xml：声明组件、权限、应用元数据。安装时解析并注册到 PMS。
+"
         }
       ]
     },
@@ -68,32 +142,65 @@
       "subsections": [
         {
           "subtitle": "1. 命令行工具",
-          "content": "adb：adb shell、adb install、adb push/pull、adb forward、adb logcat。fastboot：刷机工具。Linux 命令：grep、find、ps、netstat、chmod、mount、dmesg。"
+          "content": "
+    adb：adb shell、adb install、adb push/pull、adb forward、adb logcat。
+    fastboot：刷机工具。Linux 命令：grep、find、ps、netstat、chmod、mount、dmesg。
+"
         },
         {
           "subtitle": "2. 逆向工具详解",
-          "content": "静态分析：- jadx：反编译 DEX 到 Java。- apktool：解码资源、打包、重签名。- IDA Pro / Ghidra：Native 反汇编。- readelf / objdump：查看 ELF 结构。动态调试：- Android Studio Debugger（Java 层）。- LLDB / gdb（Native 层）。- Frida：跨平台 Hook（Java/Native）。- Xposed：框架层 Hook。抓包与分析：- Wireshark、tcpdump、Burp Suite。"
+          "content": "
+        静态分析：
+    - jadx：反编译 DEX 到 Java。
+    - apktool：解码资源、打包、重签名。- IDA Pro / Ghidra：Native 反汇编。
+    - readelf / objdump：查看 ELF 结构。动态调试：- Android Studio Debugger（Java 层）。
+    - LLDB / gdb（Native 层）。
+    - Frida：跨平台 Hook（Java/Native）。
+    - Xposed：框架层 Hook。
+        抓包与分析：
+    - Wireshark、tcpdump、Burp Suite。"
         },
         {
           "subtitle": "3. 编译 AOSP",
-          "content": "官方教程：repo init -u https://android.googlesource.com/platform/manifest -b android-13.0.0_r1编译：source build/envsetup.sh && lunch aosp_arm64-eng && make -j8产出刷入设备或模拟器运行，可修改系统组件进行调试。"
+          "content": "
+    官方教程：repo init -u https://android.googlesource.com/platform/manifest -b android-13.0.0_r1
+    编译：source build/envsetup.sh && lunch aosp_arm64-eng && make -j8产出刷入设备或模拟器运行，可修改系统组件进行调试。
+"
         }
       ]
     },
     {
       "section_id": 5,
       "section_title": "五、Android 系统启动过程",
-      "content": "1. Boot ROM → BootLoader：加载 BootLoader 到 RAM。2. BootLoader → Linux Kernel：解压启动内核，挂载根文件系统。3. Kernel → init 进程：执行 /init（PID=1）。4. init 解析 .rc 文件：启动 ueventd、logd、vold、adbd、netd、rild、mediaserver、surfaceflinger、zygote 等。5. Zygote 启动 SystemServer：fork 出进程执行 SystemServer，启动 AMS、PMS、WMS 等。6. Launcher 启动：AMS 启动桌面和 SystemUI。"
+      "content": "
+	1. Boot ROM → BootLoader：加载 BootLoader 到 RAM。
+	2. BootLoader → Linux Kernel：解压启动内核，挂载根文件系统。
+	3. Kernel → init 进程：执行 /init（PID=1）。
+	4. init 解析 .rc 文件：启动 ueventd、logd、vold、adbd、netd、rild、mediaserver、surfaceflinger、zygote 等。
+	5. Zygote 启动 SystemServer：fork 出进程执行 SystemServer，启动 AMS、PMS、WMS 等。
+	6. Launcher 启动：AMS 启动桌面和 SystemUI。"
     },
     {
       "section_id": 6,
       "section_title": "六、App 启动过程",
-      "content": "1. 点击图标 → Launcher 调用 startActivity → AMS。2. AMS 通过 socket 向 Zygote 请求 fork 新进程。3. 新进程执行 ActivityThread.main()。4. ActivityThread 调用 attach 向 AMS 注册，AMS 回调 bindApplication 创建 LoadedApk。5. Instrumentation 创建 Activity 实例。6. Activity 流程：attach → attachBaseContext → onCreate → onStart → onResume。"
+      "content": "
+	1. 点击图标 → Launcher 调用 startActivity → AMS。
+	2. AMS 通过 socket 向 Zygote 请求 fork 新进程。
+	3. 新进程执行 ActivityThread.main()。
+	4. ActivityThread 调用 attach 向 AMS 注册，AMS 回调 bindApplication 创建 LoadedApk。
+	5. Instrumentation 创建 Activity 实例。
+	6. Activity 流程：attach → attachBaseContext → onCreate → onStart → onResume。"
     },
     {
       "section_id": 7,
       "section_title": "七、APK 安装过程",
-      "content": "1. 复制 APK 到 /data/app/包名-随机字符串/。2. 解析 AndroidManifest.xml。3. PMS 验证签名、授予权限、注册组件到 packages.xml。4. dex2oat 编译 DEX 为 OAT（附带 VDEX）。5. 创建 /data/data/包名/ 目录。6. 发送 ACTION_PACKAGE_ADDED 广播。"
+      "content": "
+	1. 复制 APK 到 /data/app/包名-随机字符串/。
+	2. 解析 AndroidManifest.xml。
+	3. PMS 验证签名、授予权限、注册组件到 packages.xml。
+	4. dex2oat 编译 DEX 为 OAT（附带 VDEX）。
+	5. 创建 /data/data/包名/ 目录。
+	6. 发送 ACTION_PACKAGE_ADDED 广播。"
     },
     {
       "section_id": 8,
@@ -101,11 +208,24 @@
       "subsections": [
         {
           "subtitle": "Java / Kotlin 层",
-          "content": "DEX 文件格式：文件头、字符串池、类型池、方法池、类定义。修改 DEX 需修复 checksum。字节码指令：Dalvik 指令集（寄存器机），smali 表示。指令抽取/回填是加固常用手段。类加载器与热修复：PathClassLoader vs DexClassLoader，合并 dexElements 实现插件化。ART 运行时：JIT、AOT、解释执行。dex2oat 输出 OAT（ELF 格式）。反射调用内部方法：setAccessible(true)，修改 final 字段。"
+          "content": "
+	DEX 文件格式：文件头、字符串池、类型池、方法池、类定义。修改 DEX 需修复 checksum。
+	字节码指令：Dalvik 指令集（寄存器机）	，smali 表示。指令抽取/回填是加固常用手段。
+	类加载器与热修复：PathClassLoader vs DexClassLoader，合并 dexElements 实现插件化。
+	ART 运行时：JIT、AOT、解释执行。dex2oat 输出 OAT（ELF 格式）。
+	反射调用内部方法：setAccessible(true)，修改 final 字段。
+"
         },
         {
           "subtitle": "Native 层",
-          "content": "SO 文件：ELF 共享对象，段 .text、.rodata、.data、.bss。SO 加载执行：System.loadLibrary → dlopen → 映射内存 → 执行 init_array → 重定位 GOT。反编译：IDA/Ghidra 伪代码，识别 JNI_OnLoad。VMP：自定义字节码解释器。加密解密：.text 段加密，init_array 中解密 + mprotect。inlineHook：修改函数前几个字节跳转，需保存/恢复寄存器。ptrace 注入：附加进程，分配内存，写入 shellcode，修改 PC。"
+          "content": "
+	SO 文件：ELF 共享对象，段 .text、.rodata、.data、.bss。
+	SO 加载执行：System.loadLibrary → dlopen → 映射内存 → 执行 init_array → 重定位 GOT。
+	反编译：IDA/Ghidra 伪代码，识别 JNI_OnLoad。VMP：自定义字节码解释器。
+	加密解密：.text 段加密，init_array 中解密 + mprotect。
+	inlineHook：修改函数前几个字节跳转，需保存/恢复寄存器。
+	ptrace 注入：附加进程，分配内存，写入 shellcode，修改 PC。
+"
         }
       ]
     },
@@ -115,23 +235,76 @@
       "subsections": [
         {
           "subtitle": "9.1 为什么需要同时学习 x86_64 和 ARM64？",
-          "content": "x86_64：当前壳的解密/加载代码运行在 x86 架构上（为了兼容模拟器或 x86 设备）。你需要读懂它的逻辑才能脱壳。这是临时路障。ARM64：脱壳后得到的真实业务代码（游戏逻辑、加密算法、核心 Native 方法）几乎都是 ARM64 指令。这是长期主力。"
+          "content": "
+	x86_64：当前壳的解密/加载代码运行在 x86 架构上（为了兼容模拟器或 x86 设备）。你需要读懂它的逻辑才能脱壳。这是临时路障。
+	ARM64：脱壳后得到的真实业务代码（游戏逻辑、加密算法、核心 Native 方法）几乎都是 ARM64 指令。这是长期主力。"
         },
         {
           "subtitle": "9.2 短期目标：x86_64 汇编基础（2~3天）",
-          "content": "学习目标：能读懂 x86_64 汇编代码，配合 IDA F5 理解壳的行为。必须掌握的指令：mov, push, pop, lea, add, sub, imul, inc, dec, and, or, xor, cmp, test, jz/jnz, jg/jl, ja/jb, cmovz/cmovnz, call, ret。寄存器重点：rax（返回值）、rdi/rsi/rdx/rcx/r8/r9（参数）、rsp（栈指针）、rbp（帧指针）。实战技巧：IDA F5；动态调试使用 x86_64 模拟器 + IDA 远程调试或 Frida hook memcpy/mprotect；在解密后 dump 内存。"
+          "content": "
+	学习目标：能读懂 x86_64 汇编代码，配合 IDA F5 理解壳的行为。
+	必须掌握的指令：mov, push, pop, lea, add, sub, imul, inc, dec, and, or, xor, cmp, test, jz/jnz, jg/jl, ja/jb, cmovz/cmovnz, call, ret。
+	寄存器重点：rax（返回值）、rdi/rsi/rdx/rcx/r8/r9（参数）、rsp（栈指针）、rbp（帧指针）。
+	实战技巧：IDA F5；动态调试使用 x86_64 模拟器 + IDA 远程调试或 Frida hook memcpy/mprotect；在解密后 dump 内存。"
         },
         {
           "subtitle": "9.3 长期目标：ARM64 汇编系统学习（1~2周入门 + 持续实践）",
-          "content": "学习目标：独立分析脱壳后的 ARM64 Native 代码。必须掌握的指令：mov, ldr/str, ldp/stp, adr/adrp, add/sub/mul, and/orr/eor, cmp, b.eq/b.ne/b.gt, bl, br, ret。寄存器与调用约定：参数 x0-x7，返回值 x0，被调用者保存 x19-x29，栈指针 sp，链接寄存器 lr(x30)。学习资源：ARM Architecture Reference Manual ARMv8 (A64部分)；在线教程；B站视频；实践编译C函数并对照汇编。"
+          "content": "
+	学习目标：独立分析脱壳后的 ARM64 Native 代码。必须掌握的指令：mov, ldr/str, ldp/stp, adr/adrp, add/sub/mul, and/orr/eor, cmp, b.eq/b.ne/b.gt, bl, br, ret。
+	寄存器与调用约定：参数 x0-x7，返回值 x0，被调用者保存 x19-x29，栈指针 sp，链接寄存器 lr(x30)。
+	学习资源：ARM Architecture Reference Manual ARMv8 (A64部分)；在线教程；B站视频；实践编译C函数并对照汇编。
+"
         },
         {
           "subtitle": "9.4 从脱壳到分析的完整步骤",
-          "content": "1. 分析 x86_64 壳 SO：定位入口（JNI_OnLoad 或 init_array），动态调试跟踪解密，在 memcpy/mprotect 后 dump 内存。2. 得到真实代码：DEX 用 jadx，ARM64 SO 用 IDA。3. ARM64 分析技巧：识别 JNI 函数，关注字符串交叉引用，配合 Frida 动态 Hook。"
+          "content": "
+	1. 分析 x86_64 壳 SO：定位入口（JNI_OnLoad 或 init_array），动态调试跟踪解密，在 memcpy/mprotect 后 dump 内存。
+	2. 得到真实代码：DEX 用 jadx，ARM64 SO 用 IDA。
+	3. ARM64 分析技巧：识别 JNI 函数，关注字符串交叉引用，配合 Frida 动态 Hook。
+"
         },
         {
           "subtitle": "9.5 常见问题",
-          "content": "Q：跳过 x86_64 直接动态 dump？A：可以尝试，但如果壳有反 dump，仍需逆向 x86_64。Q：只学 ARM64 不学 x86_64？A：对这个壳不行，但脱壳后可以专注 ARM64。建议花2-3天突击 x86_64 基础。Q：快速转换 x86_64 和 ARM64 思维？A：重点掌握调用约定和内存寻址差异，写同一 C 函数编译成两种架构对比输出。"
+          "content": "
+	Q：跳过 x86_64 直接动态 dump？A：可以尝试，但如果壳有反 dump，仍需逆向 x86_64。
+	Q：只学 ARM64 不学 x86_64？A：对这个壳不行，但脱壳后可以专注 ARM64。建议花2-3天突击 x86_64 基础。
+	Q：快速转换 x86_64 和 ARM64 思维？A：重点掌握调用约定和内存寻址差异，写同一 C 函数编译成两种架构对比输出。
+"
+        }
+      ]
+    },
+    {
+      "section_id": 10,
+      "section_title": "十、总结与学习路径图",
+      "content": "编程语言基础 (Java/C++/汇编) → 操作系统 + Linux + 编译链接 → Android 核心框架 (启动/组件/权限) → 工具熟练 (adb/Frida/IDA) → 短期突击 x86_64 (分析当前壳) + 长期系统学习 ARM64 (脱壳后分析) → 实战项目 + 持续积累"
+    }
+  ]
+}
+        },
+        {
+          "subtitle": "9.3 长期目标：ARM64 汇编系统学习（1~2周入门 + 持续实践）",
+          "content": "
+	学习目标：独立分析脱壳后的 ARM64 Native 代码。
+	必须掌握的指令：mov, ldr/str, ldp/stp, adr/adrp, add/sub/mul, and/orr/eor, cmp, b.eq/b.ne/b.gt, bl, br, ret。
+	寄存器与调用约定：参数 x0-x7，返回值 x0，被调用者保存 x19-x29，栈指针 sp，链接寄存器 lr(x30)。
+	学习资源：ARM Architecture Reference Manual ARMv8 (A64部分)；在线教程；B站视频；实践编译C函数并对照汇编。
+"
+        },
+        {
+          "subtitle": "9.4 从脱壳到分析的完整步骤",
+          "content": "
+	1. 分析 x86_64 壳 SO：定位入口（JNI_OnLoad 或 init_array），动态调试跟踪解密，在 memcpy/mprotect 后 dump 内存。
+	2. 得到真实代码：DEX 用 jadx，ARM64 SO 用 IDA。
+	3. ARM64 分析技巧：识别 JNI 函数，关注字符串交叉引用，配合 Frida 动态 Hook。
+"
+        },
+        {
+          "subtitle": "9.5 常见问题",
+          "content": "
+	Q：跳过 x86_64 直接动态 dump？A：可以尝试，但如果壳有反 dump，仍需逆向 x86_64。
+	Q：只学 ARM64 不学 x86_64？A：对这个壳不行，但脱壳后可以专注 ARM64。建议花2-3天突击 x86_64 基础。
+	Q：快速转换 x86_64 和 ARM64 思维？A：重点掌握调用约定和内存寻址差异，写同一 C 函数编译成两种架构对比输出。
+"
         }
       ]
     },
