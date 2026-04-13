@@ -151,14 +151,16 @@
           "subtitle": "2. 逆向工具详解",
           "content": "
         静态分析：
-    - jadx：反编译 DEX 到 Java。
-    - apktool：解码资源、打包、重签名。- IDA Pro / Ghidra：Native 反汇编。
-    - readelf / objdump：查看 ELF 结构。动态调试：- Android Studio Debugger（Java 层）。
-    - LLDB / gdb（Native 层）。
-    - Frida：跨平台 Hook（Java/Native）。
-    - Xposed：框架层 Hook。
+    		- jadx：反编译 DEX 到 Java。
+    		- apktool：解码资源、打包、重签名。- IDA Pro / Ghidra：Native 反汇编。
+    		- readelf / objdump：查看 ELF 结构。
+		动态调试：- Android Studio Debugger（Java 层）。
+    		- LLDB / gdb（Native 层）。
+    		- Frida：跨平台 Hook（Java/Native）。
+    		- Xposed：框架层 Hook。
         抓包与分析：
-    - Wireshark、tcpdump、Burp Suite。"
+    		- Wireshark、tcpdump、Burp Suite。
+"
         },
         {
           "subtitle": "3. 编译 AOSP",
