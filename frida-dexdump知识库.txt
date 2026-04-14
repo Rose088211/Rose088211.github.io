@@ -1,0 +1,25 @@
+加固壳的脱壳或加载真实DEX的过程:
+第一步：动态库 jalskpopw.so 被加载时，系统会调用其 JNI_OnLoad 函数。这是壳的 native 入口，通常用来执行早期初始化和后续的解密、注入操作。 --->Exports container JNI_OnLoad伪代码无法分析。
+第二步：加载真实dex时必须读取解密文件，分析 Native 层（.so 文件），监控文件读取操作。---> AAssetManager_open、fopen、open、openat（java层调用、native层调用、syscall层调用消耗大不考虑）
+
+加固壳“必然读取APK的assets目录”是因为：
+保护目标：assets是需要保护的关键资产之一。
+技术必要性：无论是构建时加密，还是运行时解密/虚拟化，都必须读取原始资产内容。
+完整性：缺少对assets的保护，会留下明显的安全缺口。
+
+第三步（decrypto and map）：搜索已知文件头（DEX / ELF），解密后的数据最终会被写入内存（malloc / mmap），然后可能被 ClassLoader 加载。 --->hook java.lang.ClassLoader
+
+解密过程必然在某个时刻将密文转化为明文（通常是完整的 DEX 或代码块）。
+可以在合适的时机在内存中查找DEX 文件标准开头是 64 65 78 0a 30 33 35 00（即 dex\n035\0）
+
+第四步：为了能让系统加载这个 DEX，需要创建一个合法的 DexFileJava 对象作为载体。
+
+将 mCookie[1]的值（通常指向原始 Dex 文件在内存中的 DexFile结构体）替换为解密后的 DEX 内存地址 0x12ce15a4。
+这样，这个 Java DexFile对象就从“载体”变成了指向我们解密后代码的“门户”。
+
+第五步：将这个修改过的 DexFile对象插入到应用主 ClassLoader（通常是 BaseDexClassLoader）的 dexElements数组中。
+
+第六步 && 第七步：当应用程序后续尝试加载其真正的业务类（如 com.anything.MyActivity）时：
+1. 步骤 6 (Callback)：一个预先注册的 ART 层回调（ClassLoadCallback）可能会被触发，执行一些环境检查或最后的准备工作，确保类加载能安全进行。
+2. 步骤 7 (加载)：系统的类查找流程会遍历 dexElements数组，最终定位到我们注入的那个 DexFile对象。
+由于它的 mCookie指向了解密后的 DEX 内存，因此 ART 虚拟机能够从中成功读取并定义出 com.anything.MyActivity等真正的应用类。类加载成功，应用正常执行。
