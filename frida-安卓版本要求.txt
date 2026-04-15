@@ -1,0 +1,11 @@
+//time: 2026-04-15 16:11:12.378624
+
+Android版本	推荐Frida版本	说明
+Android 7-8	Frida 12.8.0	低版本Android兼容性较好
+Android 10	Frida 14.x	基本支持
+Android 12​	**Frida 16.x+**​	必须使用16.0.0以上版本
+Android 13+	Frida 16.x+	需要较新版本
+为什么Android 12需要更高版本？
+ART运行时变化：Android 12的ART虚拟机内部结构发生变化，ArtMethod字段布局与之前版本不同
+内存访问限制：Android 12+引入了更严格的内存访问限制，低版本Frida无法正确处理
+安全机制增强：Android 12加强了运行时保护机制
