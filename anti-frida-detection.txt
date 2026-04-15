@@ -1,0 +1,49 @@
+//author: None
+//time: 2026-04-15 11:56:46.051626
+对于frida检测网上有太多公开的各种检测，先总结一波
+
+进程名检测：扫描 frida-server、frida-helper、gadget 等可疑进程名。
+
+端口检测：检查本机监听端口，重点关注 27042/27043 及异常 loopback 端口。
+
+握手特征检测：对可疑端口做轻量协议探测，识别 Frida RPC/握手特征。
+
+/proc/net/tcp 枚举 + D-Bus REJECT 主动探测。
+
+/proc/self/net/unix 扫描可疑 unix socket
+
+断点指令检测：00 00 20 d4 (brk #0) 前后字节变化。
+
+rwxp 页权限检测包括libc.so | libart.so
+
+SELinux 策略与相关痕迹项（含 frida_memfd/frida_file）检测
+
+ELF 反伪装：magic、文件头、段表异常校验
+
+/proc/self/maps 模块检测：查找 frida、gadget、gum 相关 so 映射。
+
+内存字符串检测：扫描关键字符串（如 frida、gum-js-loop、gmain 等）.rodata/DT_NEEDED 关键字扫描 并做上下文校验。
+
+线程名检测：遍历 /proc/self/task/*/comm，匹配 gum-js-loop、gmain 等异常线程名。
+
+FD 检测：遍历 /proc/self/fd，识别可疑 pipe/socket/unix domain socket。
+
+可疑文件路径检测：检查 data/local/tmp 等位置的可疑二进制与残留文件。
+
+环境检测联动：Root、调试态、注入态联合评分，不做单点决策。
+
+TracerPid 检测：读取 /proc/self/status，发现调试附加行为，wchan、附加链路检测
+
+ptrace 自保护：应用启动早期抢占调试附加路径。
+
+inline hook 检测：校验关键函数入口指令/前导字节是否被改写。
+
+GOT/PLT 完整性检测：关键符号地址是否被重定向。
+
+关键 so 完整性：对安全关键 so 做 hash/签名校验。
+
+调用链异常检测：对 dlopen/dlsym 调用链做来源校验。
+
+Java 层注入痕迹：检查异常 ClassLoader、动态加载 dex/jar。
+…
+那么随着frida的更新与对抗的升级，那么检测最后的处理会不会从界面卡死、退出等慢慢转入降权、限流、验证、标记等策略，像风控那样学习？个人感觉对抗反调试只是时间问题，像风控那样借鉴相比对抗检测难度高了不少？
