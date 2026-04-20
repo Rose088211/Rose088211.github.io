@@ -1,0 +1,23 @@
+//author: none
+//time: 2026-04-20 18:12:44.284272
+
+Android root方案：
+		//漏洞提权su
+		Vulnerable(KING ROOT)： api level 21 - before Android 5.0 （App will run on approximately 100% of devices.）
+		Vulnerable(SuperSU)： api level 24 - before Android 7.0 （App will run on approximately 99.2% of devices.）
+		
+		//补丁修改对象不同
+		Magisk(Kitsune/Alpha): api level 21+ after Android 5.0
+		KernelSu: api level 24+ after Android 7.0 (main supports Android kernel versions 5.10+)
+		Apatch: api level 23+ after Android 6.0 (Only supports the ARM64 architecture;Only supports Android kernel versions 3.18 - 6.12)
+		
+		//高权限
+		zizhuku(免root hook)： 由于需要repackage，不考虑。
+		
+ios 越狱方案：		
+		//权限分类
+		有根越狱 (Rootful)   iOS 12 - 16.x (部分) cpu:A7 - A11
+		无根越狱 (Rootless)  iOS 15.0 - 16.6.1  cpu:A9 - A16 / M1 - M2
+		隐根越狱 (RootHide)	iOS 15.0 - 16.5.1  cpu:A9 - A16 / M1 - M2
+		巨魔 (TrollStore)	iOS 14.0 beta 2 - 16.6.1, 16.7 RC (20H18), 17.0   cpu:A8 - A17 Pro / M1 - M2
+
