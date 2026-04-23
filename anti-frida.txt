@@ -10,7 +10,7 @@ Ptrace反调试原理：
     Pthread_create 创建反检测线程 = 阻止线程创建：Hook pthread_create / clone || 保留线程但篡改结果 hook open/read 来伪装 /proc/self/status 的内容(frida ptread痕迹修改)
     启动时占位 – Frida spawn 模式 = 在进程执行任何原始指令前注入脚本，直接 hook 系统调用层(Pthread_create 创建反检测线程) || 直接调用 ptrace 占据主动
     frida ptread痕迹修改 = Frida 本身作为调试器也会在 TracerPid 中留下 PID，Hook 文件访问函数（open, read, fgets 等），在返回内容前将 TracerPid: xxx 替换为 TracerPid: 0
-    拦截内核调用 / svc 指令 = 强制在用户态拦截 svc（仅限特定地址）|| 使用 Frida 的 Stalker 动态监控系统调用 || 内核层 hook
+    拦截内核调用 / svc 指令 = 强制在用户态拦截 svc使用 Frida 的 Stalker 仅能动态监控系统调用 || 内核层 hook
 TODO一些思考🤔::
     如果 Frida 保持附加状态，App 随后的 ptrace​ 调用会失败，App 依然会发现并退出。
     https://github.com/chroblert/JC-AntiPtrace
