@@ -5,7 +5,7 @@ Fakelocation 存在以下几种方式：
     1.安卓开发者模式模拟定位 --> 标枪定位（影梭）
 		安卓6.0以上 打开开发者模式→模拟位置信息应用||安卓6.0以前 打开开发者模式→允许模拟位置
 		利用系统为开发者提供的官方调试接口（Mock location API），通过addTestProvider等方式向系统注入模拟位置。
-	2.root方式实现-->系统服务进程（system_server 里的 LocationManagerService）= shadow
+	2.root方式实现-->系统服务进程（system_server 里的 LocationManagerService）= shadow应用内注入or Fake Location 以root模式运行
 		root是直接修改了系统文件来添加代码注入窗口。
 		通过“Hook”手段劫持LocationManagerService服务中的相关函数，达到修改定位的目的。
 		Fake Location则是直接劫持“系统位置服务”，因不在目标应用进程空间，更加隐蔽而难以检测。
