@@ -1,0 +1,8 @@
+//author: Rose0882
+//time: 2026-04-29 17:04:54.673749
+
+GDB 中看 GOT 变化（超常用）
+x/gx &printf@got
+b printf
+run
+x/gx &printf@got
