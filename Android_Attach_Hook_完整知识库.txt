@@ -27,7 +27,7 @@ Android 运行时层级
 
 2. Native 层 Hook (用户态)
     --> 函数劫持方式
-        --> GOT/PLT Hook  --> 修改 ELF 的导入表条目
+        --> GOT/PLT Hook  --> 修改 ELF 的导入表条目（Android 10+ 使用Linker hook）
         --> Inline Hook
             --> 指令级修改  --> 写入跳转指令 (如 ldr/br, jmp)
             --> Trap 断点式 (属于 Inline 分支)  --> 写入 int3/brk，触发 SIGTRAP，信号处理中接管执行
