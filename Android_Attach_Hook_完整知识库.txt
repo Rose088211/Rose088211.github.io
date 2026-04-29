@@ -1,0 +1,64 @@
+//author: Rose0888211
+//time: 2026-04-29 16:07:46.607287
+
+Android Hook 完整体系
+注入行为：代码进入进程的过程
+hook行为：注入进程的代码拦截函数
+
+一、按目标层级分类
+
+Android 运行时层级
+    --> Java 层 (ART/Dalvik)
+    --> Native 层 (C/C++ 动态库)
+    --> 内核层 (syscall / 内核函数)
+
+1. Java 层 Hook
+    --> 技术手段
+        --> 动态代理 (Proxy + InvocationHandler)  --> 仅接口代理，局限大
+        --> 反射 (Reflection)  --> 修改 field/method 可访问性，基础但不稳定
+        --> ArtMethod 替换  --> 修改 entry_point_from_quick_compiled_code
+        --> VTable 替换  --> 修改 Java 类的虚函数表，需偏移
+    --> 典型框架
+        --> 动态调试式  --> Frida (Java.perform)  --> 依赖 ptrace 注入 + ArtMethod 替换
+        --> 持久框架式  --> Xposed / LSPosed / EdXposed
+            --> 注入载体  --> Riru (旧) || Zygisk (新)
+    --> 注入方式  --> 见下文“注入与激活分类”
+
+2. Native 层 Hook (用户态)
+    --> 函数劫持方式
+        --> GOT/PLT Hook  --> 修改 ELF 的导入表条目
+        --> Inline Hook
+            --> 指令级修改  --> 写入跳转指令 (如 ldr/br, jmp)
+            --> Trap 断点式 (属于 Inline 分支)  --> 写入 int3/brk，触发 SIGTRAP，信号处理中接管执行
+        --> 基于 ptrace 的指令操纵  --> 附加进程，单步执行，改寄存器/内存 (常用于调试器)
+        --> 信号劫持 (Signal-based Hook)  --> 注册 sigaction，利用 SIGSEGV/SIGTRAP 懒加载 hook
+        --> LD_PRELOAD  --> 替换动态库导出函数 (仅限导入符号)
+    --> 典型框架/工具
+        --> Frida (Interceptor / Stalker)  --> 混合 GOT/PLT + Inline
+        --> Dobby / HookZz  --> 纯 native hook 库
+        --> 手工调试器  --> gdb / lldb + ptrace
+    --> 注入方式  --> 见下文
+
+3. 内核层 Hook
+    --> 技术手段
+        --> 内核模块 (LKM)  --> 修改 sys_call_table / kprobe / ftrace
+        --> eBPF  --> 挂载 kprobe / tracepoint，无需重启内核
+        --> Seccomp  --> 过滤/拦截系统调用 (不是替换实现，但可阻止或记录)
+    --> 典型框架/工具
+        --> Android eBPF (例如 /sys/fs/bpf)  --> 系统自带流量监控等
+        --> 定制 Kernel Module  --> 需 root 或编译到内核
+    --> 注入方式  --> 内核模块插入 (insmod) 或 集成进 boot.img
+
+二、注入与激活机制（独立于层级，可与任何层配合）
+
+注入方式分类
+    --> Zygote 注入  --> 修改 Zygote 进程，在 fork app 时加载 so
+        --> 经典实现  --> Xposed (替换 app_process) + Riru/Zygisk
+        --> 也可用于 native hook 提前驻留
+    --> ptrace 注入  --> attach 目标进程，写 shellcode，远程调用 dlopen
+        --> 典型工具  --> Frida (早期依赖)、定制 injector
+    --> /proc/pid/mem 直接写入  --> 打开 mem 文件写内存 (需 root 或同用户)
+    --> 动态链接器劫持
+        --> LD_PRELOAD 环境变量  --> 仅对调用 dlopen 的进程生效
+        --> 替换 linker (如修改 /system/bin/linker64)  --> 持久但风险高
+    --> ROM 集成 / 内核模块自动加载  --> 预置 so 到系统镜像，或通过 init.rc 加载 ko
