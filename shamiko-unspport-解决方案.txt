@@ -1,0 +1,35 @@
+//author: Rose0882
+//time: 2026-05-06 15:00:34.916012
+
+
+SHAMIKO-FIX-01 测试用例树状图
+│
+├─ 测试标题
+│  └─ 验证按正确顺序安装模块并关闭遵守排除列表后，Shamiko 不再提示“Unsupported Environment”
+│
+├─ 前置条件
+│  ├─ 1. 设备已安装 Magisk（版本 ≥ 25，推荐 v26+）且已 root
+│  ├─ 2. 当前 Shamiko 模块提示“Unsupported Environment”
+│  ├─ 3. 已准备好 Shamiko 正确版本（Magisk v26+ 使用 0.7+，v25 使用 0.6）
+│  └─ 4. 已准备好 Zygisk、LSPosed 等其他模块的安装包
+│
+├─ 测试步骤
+│  ├─ 1. 打开 Magisk，进入“模块”页面，卸载所有已安装模块（包括 Shamiko、LSPosed 等）
+│  ├─ 2. 重启设备
+│  ├─ 3. 在 Magisk 设置中，关闭“遵守排除列表”（Enforce DenyList）开关
+│  ├─ 4. 按以下顺序重新安装模块
+│  │   ├─ 先安装 Zygisk（若 Magisk 已内置 Zygisk 则跳过）
+│  │   ├─ 再安装 Shamiko（从本地选择模块文件）
+│  │   ├─ 然后安装 LSPosed
+│  │   └─ 最后安装其他模块（如有）
+│  ├─ 5. 每次安装后不重启，待全部安装完成后重启设备
+│  ├─ 6. 重启后打开 Magisk → 模块，查看 Shamiko 状态
+│  └─ 7. 打开 LSPosed 管理器，尝试勾选需要隐藏的应用
+│
+└─ 预期结果
+   ├─ 1. Magisk 模块页面中 Shamiko 显示为正常（无“Unsupported Environment”红色提示）
+   ├─ 2. LSPosed 中可以正常勾选应用，无报错
+   └─ 3. ADB 连接（若使用模拟器）正常工作（可选）
+
+
+    Enjoy !!!
