@@ -1,0 +1,139 @@
+//author: Rose0882
+//time: 2026-05-11 16:48:59.022744
+
+📦 非GKI设备手动集成KernelSU流程（基于v0.9.5）
+│
+├─ 🔧 一、准备内核源码
+│   │
+│   ├─ 目标：下载并准备完整的内核源码
+│   │
+│   ├─ ⚠️ 关键提醒：KernelSU 1.0及更高版本已不再支持非GKI内核，必须使用v0.9.5版本[reference:0]。
+│   │
+│   └─ 具体步骤：
+│       │
+│       ├─ ① 从SoC厂商（如高通/MTK）或AOSP仓库获取基线源码，然后应用OEM/手机厂商的补丁
+│       ├─ ② 确认内核源码可独立编译，并能生成可启动的镜像（boot.img）
+│       └─ ③ 将源码存放在Linux环境（如WSL2 Ubuntu 22.04）的某个目录，例如 ~/android/kernel/msm-5.4
+│
+├─ 🔧 二、集成KernelSU源码（手动修改模式）
+│   │
+│   ├─ 目标：将KernelSU的代码文件正确地添加到内核源码树中
+│   │
+│   └─ 具体步骤：
+│       │
+│       ├─ ① 进入内核源码顶层目录：cd ~/android/kernel/msm-5.4/
+│       │
+│       └─ ② 执行集成脚本：curl -LSs "https://raw.githubusercontent.com/KernelSU-Next/KernelSU-Next/next/kernel/setup.sh" | bash -s legacy
+│
+├─ 🔧 三、配置内核编译选项
+│   │
+│   ├─ 目标：编辑内核配置文件（defconfig），为后续的编译做好准备
+│   │
+│   └─ 具体步骤：
+│       │
+│       ├─ ① 找到配置文件
+│       │   └─ 路径通常为 arch/arm64/configs/ 或 arch/arm64/configs/vendor/ 下，文件名类似 vendor_name_defconfig[reference:1][reference:2]。
+│       │
+│       └─ ② 使用文本编辑器（如vim, nano）打开该文件，并在末尾添加：CONFIG_KSU=y   # 核心开关
+│
+├─ 🔧 四、修改内核源码Hook点
+│   │
+│   ├─ 目标：手动修改内核源码中的关键函数，这是非GKI设备集成的核心步骤之一[reference:3]。
+│   │
+│   └─ 具体修改内容：
+│       │
+│       ├─ ① fs/exec.c
+│       │   ├─ 定位到 do_execveat_common 函数
+│       │   └─ 在函数开头，变量定义完成后，添加：
+│       │       ksu_handle_execveat((unsigned long)filename, (unsigned long)argv, (unsigned long)envp, flags);
+│       │
+│       ├─ ② fs/open.c
+│       │   ├─ 定位到 do_faccessat 函数
+│       │   └─ 在函数开头添加：
+│       │       ksu_handle_faccessat(&filename, mode);
+│       │
+│       ├─ ③ fs/read_write.c
+│       │   ├─ 定位到 vfs_read 函数
+│       │   └─ 在函数内部添加条件编译块：
+│       │       #ifdef CONFIG_KSU
+│       │           ksu_handle_vfs_read((struct file *)file, buf, count, pos);
+│       │       #endif
+│       │
+│       └─ ④ fs/stat.c
+│           ├─ 定位到 vfs_statx 函数（若没有则找 vfs_fstatat 替代）[reference:4]
+│           └─ 在函数开头添加：
+│               ksu_handle_stat(filename, statbuf);
+│
+├─ 🔧 五、交叉编译生成新内核
+│   │
+│   ├─ 目标：利用工具链，将修改后的源码编译成可在设备上运行的内核镜像。
+│   │
+│   └─ 具体步骤：
+│       │
+│       ├─ ① 清理残留：make clean && make mrproper
+│       │
+│       ├─ ② 加载配置：make ARCH=arm64 <defconfig_name>
+│       │
+│       ├─ ③ 开始编译（示例使用Clang+Linux GCC混合工具链）：
+│       │   make -j$(nproc) ARCH=arm64 CROSS_COMPILE=aarch64-linux-android- CC=clang LD=ld.lld
+│       │
+│       └─ ④ 编译产物：位于 arch/arm64/boot/Image.gz
+│
+├─ 🔧 六、提取ramdisk并打包boot.img
+│   │
+│   ├─ 目标：将编译出的内核（Image.gz）和从原厂镜像提取的ramdisk打包成可刷写的boot.img文件。
+│   │
+│   └─ 具体步骤：
+│       │
+│       ├─ ① 获取原厂 boot.img：从官方ROM包中提取或通过dd命令从手机中导出（需Root）
+│       │
+│       ├─ ② 解包并记录参数：
+│       │   ├─ 备份原厂boot.img：cp original_boot.img backup_boot.img
+│       │   ├─ 使用 unpack_bootimg 工具解包，获取 ramdisk 及内核启动所需的 base, page_size, cmdline, offsets 等参数[reference:5][reference:6]
+│       │   ├─ 命令示例：
+│       │   │   mkdir boot_out
+│       │   │   ./unpack_bootimg --boot_img original_boot.img --out boot_out
+│       │   └─ 记录下 base, pagesize, kernel_offset, ramdisk_offset, second_offset, tags_offset, cmdline 等值。
+│       │
+│       └─ ③ 打包新镜像：
+│           ├─ 使用 mkbootimg 工具将新编译的 Image.gz 与步骤 ② 中提取的 ramdisk 重新打包[reference:7][reference:8]
+│           └─ 命令示例：
+│               ./mkbootimg \
+│                   --kernel Image.gz \
+│                   --ramdisk boot_out/ramdisk \
+│                   --base <base_value> \
+│                   --pagesize <ps_value> \
+│                   --kernel_offset <koffset_value> \
+│                   --ramdisk_offset <roffset_value> \
+│                   --second_offset <soffset_value> \
+│                   --tags_offset <toffset_value> \
+│                   --cmdline "<cmdline_string>" \
+│                   -o new_boot.img
+│
+├─ 🔧 七、刷入并验证
+│   │
+│   └─ 具体步骤：
+│       │
+│       ├─ ① 重启手机进入fastboot模式
+│       │
+│       ├─ ② 刷入镜像：
+│       │   fastboot flash boot new_boot.img
+│       │
+│       ├─ ③ 重启手机：
+│       │   fastboot reboot
+│       │
+│       └─ ④ 安装KernelSU v0.9.5管理器APK，并检查是否正常获取root权限
+│
+└─ ⚠️ 八、常见问题排查
+    │
+    ├─ 电脑重启或死机：检查Windows的虚拟内存设置是否足够
+    │
+    ├─ 内核刷入后无法开机：可尝试使用fastboot boot new_boot.img临时引导，无需刷写即可测试功能[reference:9]。
+    │
+    └─ KernelSU管理器显示“不支持”：确认手机已刷入与你编译版本对应的内核镜像，并且已安装v0.9.5版本。若均无误，则说明KernelSU不具备GKI特性，这正是本非GKI教程的应用场景。
+
+Enjoy ！！！
+
+    //TODO收集稀有系统内核源码TODO::
+
+    
