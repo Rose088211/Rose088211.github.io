@@ -10,15 +10,15 @@
 
 /proc/net/tcp 枚举 + D-Bus REJECT 主动探测。
 
-/proc/self/net/unix 扫描可疑 unix socket
+/proc/self/net/unix 扫描可疑 unix socket     -->部分模块（如 LSPosed）会开本地 socket，易被检测
 
 断点指令检测：00 00 20 d4 (brk #0) 前后字节变化。
 
-rwxp 页权限检测包括libc.so | libart.so
+rwxp 页权限检测包括libc.so | libart.so    -->似乎不普遍检测
 
-SELinux 策略与相关痕迹项（含 frida_memfd/frida_file）检测
+SELinux 策略与相关痕迹项（含 frida_memfd/frida_file）检测   -->仍可能残留 memfd:zygisk 或 memfd:jit-cache 等特征字符串；
 
-ELF 反伪装：magic、文件头、段表异常校验
+ELF 反伪装：magic、文件头、段表异常校验          -->对libc.so、libart.so等注入，检查关键系统库的代码段完整性或进行哈希校验
 
 /proc/self/maps 模块检测：查找 frida、gadget、gum 相关 so 映射。
 
