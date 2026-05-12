@@ -3,14 +3,64 @@
 hook返回值函数
 网络层检测则需要更换frida版本
 
-2. 双进程保护 ---> 自附加（ptrace反调试）
-Ptrace反调试原理：
-    pthread_create是创建反检测线程，检查ptrace技术的附加调试调用，所以可能会用到pthread_create。
-确定目标程序入口，进行绕过：
-    Pthread_create 创建反检测线程 = 阻止线程创建：Hook pthread_create / clone || 保留线程但篡改结果 hook open/read 来伪装 /proc/self/status 的内容(frida ptread痕迹修改)
-    启动时占位 – Frida spawn 模式 = 在进程执行任何原始指令前注入脚本，直接 hook 系统调用层(Pthread_create 创建反检测线程) || 直接调用 ptrace 占据主动
-    frida ptread痕迹修改 = Frida 本身作为调试器也会在 TracerPid 中留下 PID，Hook 文件访问函数（open, read, fgets 等），在返回内容前将 TracerPid: xxx 替换为 TracerPid: 0
-    拦截内核调用 / svc 指令 = 强制在用户态拦截 svc #0或者系统调用号使用 Frida 的 Stalker 仅能动态监控系统调用 || 内核层 hook
+
+Android 双进程守护中的 ptrace 反调试
+│
+├─ 0. 前置澄清：双进程守护 ≠ ptrace 反调试
+│    ├─ 双进程守护 = 两个进程互相监控、互相拉起（主要目的：保活）
+│    └─ ptrace 反调试 = 利用 ptrace 占坑，阻止外部调试器附加（主要目的：反调试）
+│        └─ 两者常结合使用：一个进程（子）ptrace附加另一个（父），同时实现保活+反调试
+│
+├─ 第1层：核心目标
+│    └─ 防止外部调试器（Frida/gdb）通过 ptrace 附加到主进程
+│
+├─ 第2层：核心手段 —— ptrace 占坑
+│    │
+│    ├─ 原理：Linux 内核限制，一个进程同时只能被一个 tracer 通过 ptrace 附加
+│    │
+│    ├─ 实现步骤
+│    │    ├─ 1. 主进程启动
+│    │    ├─ 2. fork() 创建子进程
+│    │    └─ 3. 子进程执行 ptrace(PTRACE_ATTACH, 主进程PID)
+│    │        └─ 结果：主进程的 ptrace 槽位被自家子进程占满
+│    │
+│    └─ [!] 错误纠正：ptrace 反调试的核心 = ptrace 系统调用，与 pthread_create 无关
+│
+├─ 第3层：增强监控 —— pthread_create 反检测线程（可选）
+│    │
+│    ├─ 目的：检测 ptrace 槽位是否被“别人”抢占，或发现调试器痕迹
+│    │
+│    ├─ 常见监控内容
+│    │    ├─ 读取 /proc/self/status → 检查 TracerPid
+│    │    ├─ 读取 /proc/self/maps → 搜索 frida-agent.so 等特征
+│    │    ├─ 遍历 /proc/self/task/ → 查找异常线程名（gmain, gum-js-loop）
+│    │    └─ 使用 inotify 监控 /proc/pid/mem 访问
+│    │
+│    └─ [!] 错误纠正：pthread_create 不是 ptrace 反调试的原理，而是“反反调试”的监控手段
+│
+├─ 第4层：防御触发行为
+│    └─ 一旦检测到异常
+│        ├─ 立即自杀（exit / kill）
+│        ├─ 死循环阻塞
+│        └─ 或触发进程间互相 kill
+│
+└─ 第5层：绕过方法（分层独立手段，按优先级/难度排列）
+     ├─ 【必要前置】spawn 模式
+     │    └─ A. 使用 frida -f <package> 抢占 ptrace 槽位，返回-1
+     ├─ 【核心三件套】—— 应对绝大多数检测
+     │    ├─ B. Hook ptrace（防止 App 因自附加失败而自杀）
+     │    │    └─ 对 PTRACE_TRACEME 返回 0
+     │    ├─ C. 篡改 /proc/self/status（隐藏 TracerPid）
+     │    │    └─ Hook open/read，替换 TracerPid: xxx → 0
+     │    └─ D. 篡改 /proc/self/maps（隐藏 frida 内存特征）
+     │         └─ Hook fgets/open/read，过滤 frida 相关行
+     │
+     └─ 【可选增强 · 独立暴力手段】
+          └─ E. Hook pthread_create
+               ├─ 作用：让所有反检测线程根本无法创建
+               ├─ 特点：暴力、一刀切、独立可用
+               └─ 说明：可以不配合 C/D 单独使用；与 C/D 互为替代或叠加
+
 TODO一些思考🤔::
     如果 Frida 保持附加状态，App 随后的 ptrace​ 调用会失败，App 依然会发现并退出。
     https://github.com/chroblert/JC-AntiPtrace
