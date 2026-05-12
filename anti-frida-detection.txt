@@ -23,7 +23,7 @@ Frida 检测方法总览（补充）  【安全厂商视角 - 用户态可行性
 │  ├─ 全局 JS 函数名扫描：检测内存中是否存在 `_frida`、`rpc` 等 JS 运行时变量 【✅】（扫描自身进程内存）
 │  └─ 代码段附近异常内存块：检测通过 mmap 申请的小块可执行匿名内存 【✅】（maps 对比附近地址）
 ├─ 4.文件与路径检测
-│  ├─ 可疑文件路径检测：检查 data/local/tmp 等位置的可疑二进制与残留文件 【✅】（需文件访问权限，通常可读）
+│  ├─ 可疑文件路径检测：检查 data/local/tmp 等位置的可疑二进制与残留文件 【✅】（需文件访问权限，通常可读-注意隐私合规）
 │  ├─ FD 检测：遍历 /proc/self/fd，识别可疑 pipe/socket/unix domain socket，特别关注 `anon_inode:[eventfd]`、`signalfd` 【✅】
 │  ├─ SELinux 策略与痕迹检测：查找 frida_memfd、frida_file、memfd:zygisk、memfd:jit-cache 等特征字符串 【✅】（读进程 memfd 名称有限，但 /proc/self/fd 可看到）
 │  └─ 进程快照比对：对比启动时与运行时的 maps、fd、线程列表，差分发现新增的 frida 组件 【✅】（启动时记录，运行时定期比对）
