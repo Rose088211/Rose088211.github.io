@@ -2,36 +2,51 @@
 //time: 2026-04-15 11:56:46.051626
 对于frida检测网上有太多公开的各种检测，先总结一波
 
-Frida 检测方法总览
-├─ 进程与线程检测
-│  ├─ 进程名检测：扫描 frida-server、frida-helper、gadget 等可疑进程名
-│  ├─ 线程名检测：遍历 /proc/self/task/*/comm，匹配 gum-js-loop、gmain 等异常线程名
-│  ├─ TracerPid 检测：读取 /proc/self/status，发现调试附加行为，检查 wchan 及附加链路
-│  └─ ptrace 自保护：应用启动早期抢占调试附加路径
-├─ 网络与端口检测
-│  ├─ 端口检测：检查本机监听端口，重点关注 27042/27043 及异常 loopback 端口
-│  ├─ /proc/net/tcp 枚举 + D-Bus REJECT 主动探测
-│  ├─ /proc/self/net/unix 扫描可疑 unix socket（如 LSPosed 开的本地 socket）
-│  └─ 握手特征检测：对可疑端口做轻量协议探测，识别 Frida RPC/握手特征
-├─ 内存与模块检测
-│  ├─ /proc/self/maps 模块检测：查找 frida、gadget、gum 相关 so 映射
-│  ├─ 内存字符串检测：扫描 .rodata/DT_NEEDED 中的关键字符串（如 frida、gum-js-loop、gmain），并做上下文校验
-│  ├─ 断点指令检测：检测 00 00 20 d4 (brk #0) 前后字节变化
-│  └─ rwxp 页权限检测：检查 libc.so、libart.so 等是否出现异常可执行可写页（不普遍）
-├─ 文件与路径检测
-│  ├─ 可疑文件路径检测：检查 data/local/tmp 等位置的可疑二进制与残留文件
-│  ├─ FD 检测：遍历 /proc/self/fd，识别可疑 pipe/socket/unix domain socket
-│  └─ SELinux 策略与痕迹检测：查找 frida_memfd、frida_file、memfd:zygisk、memfd:jit-cache 等特征字符串
-├─ 代码完整性检测
-│  ├─ inline hook 检测：校验关键函数入口指令/前导字节是否被改写
-│  ├─ GOT/PLT 完整性检测：检查关键符号地址是否被重定向
-│  ├─ ELF 反伪装：校验 magic、文件头、段表异常，针对 libc.so、libart.so 等关键库
-│  ├─ 关键 so 完整性：对安全关键 so 做哈希/签名校验
-│  └─ 调用链异常检测：对 dlopen/dlsym 调用链做来源校验
-├─ Java 层注入检测
-│  └─ 检查异常 ClassLoader、动态加载的 dex/jar 文件
-└─ 环境与联动检测
-   └─ 环境检测联动：Root、调试态、注入态联合评分，不做单点决策
+Frida 检测方法总览（整合原列表 + 补充）  【安全厂商视角 - 用户态可行性评估】
+├─ 1.进程与线程检测
+│  ├─ 进程名检测：扫描 frida-server、frida-helper、gadget 等可疑进程名 【✅】
+│  ├─ 线程名检测：遍历 /proc/self/task/*/comm，匹配 gum-js-loop、gmain 等异常线程名 【✅】
+│  ├─ TracerPid 检测：读取 /proc/self/status，发现调试附加行为，检查 wchan 及附加链路 【✅】
+│  ├─ ptrace 自保护：应用启动早期抢占调试附加路径 【✅】（应用自身ptrace(PTRACE_TRACEME) 可行）
+│  └─ 信号处理器检测：检查关键线程的 signal handler 是否被替换 【✅】（通过 sigaction 读取对比 libc 默认值）
+├─ 2.网络与端口检测
+│  ├─ 端口检测：检查本机监听端口，重点关注 27042/27043 及异常 loopback 端口 【✅】（读取 /proc/net/tcp，无需 root）
+│  ├─ /proc/net/tcp 枚举 + D-Bus REJECT 主动探测 【✅】（可连接本地端口发送特征包）
+│  ├─ /proc/self/net/unix 扫描可疑 unix socket（如 LSPosed 开的本地 socket） 【✅】
+│  ├─ 握手特征检测：对可疑端口做轻量协议探测，识别 Frida RPC/握手特征 【✅】（主动连接测试）
+│  └─ D-Bus 多指纹检测：除 REJECT 外，检查认证失败次数、超时等行为特征 【✅】（客户端探测即可）
+├─ 3.内存与模块检测
+│  ├─ /proc/self/maps 模块检测：查找 frida、gadget、gum 相关 so 映射 【✅】
+│  ├─ 内存字符串检测：扫描 .rodata/DT_NEEDED 中的关键字符串，并做上下文校验 【✅】（跨进程读内存受限，但自进程可读）
+│  ├─ 断点指令检测：检测 00 00 20 d4 (brk #0) 前后字节变化 【✅】（在自身代码段扫描）
+│  ├─ rwxp 页权限检测：检查 libc.so、libart.so 等是否出现异常可执行可写页 【✅】（读 /proc/self/maps 权限位）
+│  ├─ 全局 JS 函数名扫描：检测内存中是否存在 `_frida`、`rpc` 等 JS 运行时变量 【✅】（扫描自身进程内存）
+│  └─ 代码段附近异常内存块：检测通过 mmap 申请的小块可执行匿名内存 【✅】（maps 对比附近地址）
+├─ 4.文件与路径检测
+│  ├─ 可疑文件路径检测：检查 data/local/tmp 等位置的可疑二进制与残留文件 【✅】（需文件访问权限，通常可读）
+│  ├─ FD 检测：遍历 /proc/self/fd，识别可疑 pipe/socket/unix domain socket，特别关注 `anon_inode:[eventfd]`、`signalfd` 【✅】
+│  ├─ SELinux 策略与痕迹检测：查找 frida_memfd、frida_file、memfd:zygisk、memfd:jit-cache 等特征字符串 【✅】（读进程 memfd 名称有限，但 /proc/self/fd 可看到）
+│  └─ 进程快照比对：对比启动时与运行时的 maps、fd、线程列表，差分发现新增的 frida 组件 【✅】（启动时记录，运行时定期比对）
+├─ 5.代码完整性检测
+│  ├─ inline hook 检测：校验关键函数入口指令/前导字节是否被改写 【✅】（读自身代码段，memcmp 原始字节）
+│  ├─ GOT/PLT 完整性检测：检查关键符号地址是否被重定向 【✅】（读取 got 表对比加载后的解析地址）
+│  ├─ ELF 反伪装：校验 magic、文件头、段表异常，针对关键库 【✅】（读取 so 文件映射区域做解析校验）
+│  ├─ 关键 so 完整性：对安全关键 so 做哈希/签名校验 【✅】（读取文件或内存计算 hash）
+│  ├─ 调用链异常检测：对 dlopen/dlsym 调用链做来源校验 【✅】（通过 __builtin_return_address 回溯）
+│  ├─ 系统调用劫持检测：对 openat、readlinkat 等系统调用做栈回溯，检查调用者是否异常 【⚠️】（用户态 hook 系统调用受限，但可通过 libc 包装函数回溯）
+│  └─ 关键函数执行时间测量：对高频函数（如 memcmp、strcmp）测量执行时间 【✅】（使用 rdtsc 或 clock_gettime 前后打点）
+├─ 6.Java 层注入检测
+│  ├─ 检查异常 ClassLoader、动态加载的 dex/jar 文件 【✅】（通过 Java API 如 getClassLoader、getPackageInfo）
+│  └─ 遍历 Runtime.loadLibrary0 的调用栈，检测不正常的 native 库加载请求 【✅】（Java 层 hook 或打印调用栈）
+├─ 7.运行时行为检测
+│  ├─ 断点/单步异常频率统计：读取 /proc/self/stat 中的信号计数，发现频繁 SIGTRAP 【✅】（stat 字段可直接读）
+│  └─ 异常计数与上下文：统计 cminflt、cmajflt 等异常数量变化 【✅】
+├─ 8.内核与硬件检测
+│  ├─ 内核模块检测：检查 /proc/modules 或 /sys/module 中是否存在 frida.ko 【⚠️】（读取这些文件需要权限，普通应用通常可读 /proc/modules 仅自内核信息？实际非 root 可读，但 frida 内核模块会隐藏，不可靠）
+│  ├─ 硬件断点寄存器检测：通过 ptrace(PTRACE_GETREGSET) 读取 dbg0~dbg3 【❌】（ptrace 附加自身或子进程受限，需要 root 或特殊能力，Android 普通应用无法访问调试寄存器）
+│  └─ 内核态痕迹：检测其他 frida 相关内核组件 【❌】（同上，需内核访问权）
+└─ 9.环境与联动检测
+   └─ 环境检测联动：Root、调试态、注入态联合评分，综合决策 【✅】（整合以上所有结果）
 …
 那么随着frida的更新与对抗的升级，那么检测最后的处理会不会从界面卡死、退出等慢慢转入降权、限流、验证、标记等策略，像风控那样学习？
 个人感觉对抗反调试只是时间问题，像风控那样借鉴相比对抗检测难度高了不少？
