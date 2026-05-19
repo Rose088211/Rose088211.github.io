@@ -44,7 +44,7 @@ Android ptrace 反调试技术（完整分类 + 双进程守护澄清）
 │       │   }
 │       ├─ 注意：子进程需保持运行，否则父进程的 ptrace 槽位会释放。
 │       └─ 绕过方法：
-│           ├─ 方法1：同时调试父进程和子进程（如使用两个 gdb / frida 脚本） ---TODO::frida child gadting
+│           ├─ 方法1：同时调试父进程和子进程（frida monitor fork() 脚本） ---frida child gadting影响应用ui加载流程，卡在应用启动页!
 │           ├─ 方法2：杀死子进程后快速附加父进程（有竞争窗口）
 │           └─ 方法3：Hook ptrace，使子进程的 ATTACH 失败（如返回 EPERM）
 │
