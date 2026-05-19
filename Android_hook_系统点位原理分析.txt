@@ -1,0 +1,49 @@
+用户点击Launcher图标
+│
+├── Launcher 调用AMS.startActivity() // AMS ActivityManagerService Android 系统框架核心服务之 一，负责管理应用程序的生命周期，任务栈调度以及系统资源分配。
+│
+├── AMS 请求Zygote 创建新进程
+│   └── Zygote fork() 子进程
+│       └── execve() 启动 app_process
+│
+├── 如果有壳,加载壳DEX DEX文件被设置为APK的主DEX,系统加载优先执行
+│   └── 解密壳DEX 
+│       └── Java测读取DEX文件解密
+│       └── 加载Native库 (采用loadLibrary()加载)
+│           └── Java/Kotlin 调用 System.loadLibrary()
+│                            ↓
+│               ClassLoader 查找 .so 文件路径
+│                            ↓
+│                  调用 dlopen() 加载 .so
+│                            ↓
+│                 linker 解析.so 文件的ELF格式
+│                            ↓
+│                 加载依赖库（递归调用 dlopen）
+│                            ↓
+│                       重定位符号地址。
+│                            ↓
+│                       执行 .init 
+│                            ↓
+│                      执行 .init_array 
+│                            ↓
+│                   调用 JNI_OnLoad()
+│                            ↓
+│                 注册 Native 方法（查看明细）
+│                            ↓
+│                   Java 调用 Native 方法
+│                            ↓
+│                 通过 JNI 调用 C/C++ 函数
+│
+│   └── 调用原始入口， 跳转到原始Activity的onCteate()方法
+│
+├── 如果没壳，子进程初始化 Java层
+│   └── ActivityThread.main()
+│   └── Looper.loop() // Android 消息循环机制的核心，使主线程能够持续处理异步消息（UI 更新，事件分发，系统指令等）
+├── AMS 通知主Activity
+│   └── Activity.onCteate() //初始化界面和数据
+│   └── setContentView() //绑定布局，触发View树
+│
+└── 加载Native库
+│   
+└── 渲染UI
+
