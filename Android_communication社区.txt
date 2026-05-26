@@ -8,6 +8,7 @@
 XDA Developers	forum.xda-developers.com	全球最大的Android开发者与玩机社区。
 柚坛社区 https://www.uotan.cn/
 流星社区 https://bbs.liuxingw.com/
+小米社区 https://web.vip.miui.com/page/info/mio/mio/boardLive
 
 ROM定制
 社区名称	链接	备注
