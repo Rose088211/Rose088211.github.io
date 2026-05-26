@@ -2,3 +2,58 @@
 //time: 2026-05-26 14:46:05.215469
 
 
+刷机交流
+社区名称	链接	备注
+酷安 (CoolAPK)	www.coolapk.com	国内最活跃的泛数码社区，刷机氛围浓厚。
+XDA Developers	forum.xda-developers.com	全球最大的Android开发者与玩机社区。
+
+ROM定制
+社区名称	链接	备注
+酷安 (CoolAPK)	www.coolapk.com	ROM分享活跃，分区明确。
+XDA Developers	forum.xda-developers.com	全球第三方ROM开发的核心聚集地。
+FiimeROM	https://mi.fiime.cn/	专业的小米/红米玩机资源平台，提供ROM和工具。
+xiaomirom	https://xiaomirom.com/	 由小米发布的任何固件，您可以轻松找到。
+
+内核调校
+社区名称	链接	备注
+XDA Developers	forum.xda-developers.com	内核开发与性能调校讨论的主阵地。
+酷安 (CoolAPK)	www.coolapk.com	可以找到Magisk/KernelSU内核调校模块的使用讨论。
+AOSP开源社区	source.android.com	了解Android系统底层技术最权威的地方。
+Magisk Module 仓库	https://apt.izzysoft.de/	一个存储开源Magisk模块的仓库。
+GitCode	gitcode.net	代码托管平台，可以找到相关模块的开发资源。
+
+模块开发
+社区名称	链接	备注
+酷安 (CoolAPK)	www.coolapk.com	国内Magisk、Xposed模块分享与交流的核心平台。
+XDA Developers	forum.xda-developers.com	模块开发教程、源码交流丰富。
+GitCode	gitcode.net	代码托管平台，可以找到LSPosed等模块的开发仓库。
+菜卡玩机 (Vegeca Hub)	https://hub.cdnet.run/	个人搭建的玩机资源站，内容偏个人向，已停止更新。
+
+救砖应急
+社区名称	链接	备注
+XDA Developers	forum.xda-developers.com	救砖深度教程和工具的全球宝库。
+酷安 (CoolAPK)	www.coolapk.com	机型针对性强，适合寻找具体机型的临时解决方案。
+66刷机论坛	www.66rom.com	由一线售后工程师团队创建，提供海量线刷救砖ROM包。
+
+资源分享
+社区名称	链接	备注
+酷安 (CoolAPK)	www.coolapk.com	国内最活跃的玩机资源分享地。
+XDA Developers	forum.xda-developers.com	刷机包、内核、驱动等海量资源。
+葫芦侠 (Huluxia)	www.huluxia.com	主要面向游戏的社区，也涵盖玩机软件资源。
+
+教程指南
+社区名称	链接	备注
+酷安 (CoolAPK)	www.coolapk.com	图文教程全面，从入门到进阶。
+Bilibili (B站)	www.bilibili.com	大量实操视频教程，直观易懂。
+XDA Developers	forum.xda-developers.com	官方的、极其详尽的刷机/内核编译图文教程。
+
+求助答疑
+社区名称	链接	备注
+酷安 (CoolAPK)	www.coolapk.com	问答分区活跃，用户互助氛围好。
+XDA Developers	forum.xda-developers.com	全球开发者在线，专业问题可获权威解答。
+百度贴吧	tieba.baidu.com	拥有大量机型专属贴吧，基数巨大，回复快。
+花粉俱乐部	cn.club.vmall.com	华为官方社区，问题反馈渠道更通畅。
+小米社区 (原MIUI论坛)	www.xiaomi.cn	小米官方社区，获取官方信息和技术支持最权威。
+
+--ios--
+威峰社区 www.feng.com 问答分区活跃，用户互助氛围好。
