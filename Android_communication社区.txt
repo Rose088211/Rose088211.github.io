@@ -20,6 +20,7 @@ XDA Developers	forum.xda-developers.com	全球第三方ROM开发的核心聚集�
 FiimeROM	https://mi.fiime.cn/	专业的小米/红米玩机资源平台，提供ROM和工具。
 xiaomirom	https://xiaomirom.com/	 由小米发布的任何固件，您可以轻松找到。
 柚坛资源 https://www.uotan.cn/resources/
+全品牌rom https://opusrom.top/  查找并下载你设备的 ROM
 
 内核调校
 社区名称	链接	备注
