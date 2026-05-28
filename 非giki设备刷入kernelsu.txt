@@ -14,6 +14,25 @@ ramdisk：厂商会自定义 ramdisk 里的初始化脚本（init.rc 等），�
 替换其中的内核为自己编译的、加入了 KernelSU 的内核。
 这样既保留了厂商的启动兼容性，又植入了我们需要的 root 能力。
 
+内核源码获取
+如果你的设备的厂商没有出现在此处，或没有所需要的机型，则你需要自己想办法获取源码：
+小米、OPPO、真我、一加、moto、华为、索尼
+
+进入github搜索页面
+一般地，内核源码的名称一般为:
+android_kernel_厂家_机型代号
+android_kernel_厂家_soc代号
+当然也有把android省略的。
+当然也有例外
+例如android_kernel_oppo_mtk_4.19
+
+第三方源码
+lineageOS
+PixelExperience
+ArrowOS
+
+Config查看编译所需要的clang version
+
 简单说，没有 boot.img 手机就无法启动系统。
 📦 非GKI设备手动集成KernelSU流程（基于v0.9.5）
 │
