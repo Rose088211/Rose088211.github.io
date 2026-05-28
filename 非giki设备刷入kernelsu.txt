@@ -31,6 +31,9 @@ lineageOS
 PixelExperience
 ArrowOS
 
+设备树 (Device Tree)：它是一个“配置文件”，主要告诉系统你的手机有哪些硬件（比如屏幕、相机、传感器等），以及它们是如何连接的。
+这是编译一个完整第三方 ROM 所必需的。
+
 Config查看编译所需要的clang version
 
 简单说，没有 boot.img 手机就无法启动系统。
