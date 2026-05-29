@@ -1,0 +1,35 @@
+//author: Rose0882
+//time: 
+
+动态分析 / 调试手段（攻击者视角）
+│
+├─ 1. 传统调试器（系统特征明显，Wultra 可检测）
+│  ├─ JAVA 调试器（基于 JDWP，如 jdb、Android Studio）
+│  └─ NATIVE 调试器（基于 ptrace，如 gdb、lldb）
+│
+└─ 2. 非传统动态分析（Wultra 无法检测）
+   │
+   ├─ 动态 Instrumentation 框架
+   │  ├─ Frida（最主流，Gadget + JS 注入）
+   │  ├─ Objection（基于 Frida 的移动端工具）
+   │  └─ 定制 frida-server / frida-gadget
+   │
+   ├─ Hook 框架（ART 层注入）
+   │  ├─ Xposed / LSPosed / EdXposed
+   │  ├─ VirtualXposed（免 Root 变种）
+   │  └─ TaiChi（太极）
+   │
+   ├─ 内存修改 / 游戏修改器
+   │  ├─ GameGuardian
+   │  ├─ Cheat Engine（Android 移植版）
+   │  └─ 自定义 memedit（通过 process_vm_writev）
+   │
+   ├─ 模拟器 / 虚拟化环境
+   │  ├─ 传统模拟器（BlueStacks, LDPlayer, Nox）
+   │  ├─ VMOS / VirtualApp / Sandbox（虚拟 Android 环境）
+   │  └─ 云真机托管环境（远程调试但无 ptrace 标志）
+   │
+   └─ 内核级 / 底层注入
+      ├─ Kernel module hook（如 Kprobe）
+      ├─ 自定义注入器（通过 ptrace 动态附加后再 detach，留下短暂痕迹）
+      └─ 硬件调试器（JTAG / SWD，仅物理攻击）
