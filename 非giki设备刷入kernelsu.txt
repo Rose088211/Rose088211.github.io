@@ -37,6 +37,8 @@ ArrowOS
 Config查看编译所需要的clang version
 
 不同Android版本修补boot区别：Android 13以前的修补boot.img  Android 14以后的修补init_boot.img
+fastboot getvar current-slot 指令，若返回 current-slot: a，代表目前使用的是 A 分区
+fastboot flash init_boot_a kernelsu_next_patched_20250507_140409.img ，将修补后的镜像刷入对应的分区
 
 简单说，没有 boot.img 手机就无法启动系统。
 📦 非GKI设备手动集成KernelSU流程（基于v0.9.5）
