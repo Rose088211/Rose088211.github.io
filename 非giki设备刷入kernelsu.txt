@@ -175,5 +175,5 @@ fastboot flash init_boot_a kernelsu_next_patched_20250507_140409.img ，将修�
 Enjoy ！！！
 
     //TODO收集稀有系统内核源码TODO::
-
+realme device's repositories: https://github.com/realme-kernel-opensource?tab=repositories
     
