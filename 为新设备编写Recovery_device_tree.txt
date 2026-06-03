@@ -27,7 +27,7 @@
 │
 ├── 4. 自动生成设备树（Device Tree）
 │   ├── 使用 aospdtgen（适用于 Android 8.0+ Treble 设备）
-│   │   ├── 安装：pip install aospdtgen
+│   │   ├── 安装：pip install aospdtgen   节省大量手动编写设备树配置文件（如 BoardConfig.mk、AndroidProducts.mk 等）的繁琐工作。
 │   │   ├── 运行：python -m aospdtgen /path/to/boot.img
 │   │   └── 输出：device/<厂商>/<设备代号>/ 目录
 │   └── 使用 twrpdtgen（适用于旧设备）
