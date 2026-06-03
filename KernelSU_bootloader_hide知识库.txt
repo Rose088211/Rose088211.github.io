@@ -1,0 +1,8 @@
+//author: None
+//time: 2026-06-03 10:04:34.829909
+
+TrickyStore
+1. cd /data/adb/tricky_store
+2. If target.txt is broken, you must add the target (app package name) to the file.
+3. If you need to replace the keybox.xml file, the source is: 
+   https://pan.baidu.com/s/143jv7_VG7BvA4dgyoxrpvQ?pwd=root
