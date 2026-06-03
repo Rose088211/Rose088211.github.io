@@ -4,3 +4,53 @@
 设备树文件：Device Tree
 下载你设备对应的官方线刷包或卡刷包，后续生成设备树等都需要其中的文件。
 核心是源码 + 设备树 = Recovery镜像。
+
+适配橙狐Recovery / TWRP
+│
+├── 1. 准备环境与材料
+│   ├──  Linux 编译环境（Ubuntu 20.04/22.04）
+│   ├──  官方线刷包（完整未修改）
+│   ├──  解锁 Bootloader
+│   └──  安装依赖与工具（git、repo、python等）
+│
+├── 2. 提取 boot.img
+│   ├── 解包线刷包（使用工具如 dumpyara / payload_dumper）
+│   ├── 定位 boot.img 或 payload.bin
+│   └── 提取得到 boot.img 文件
+│
+├── 3. 同步 TWRP 源码
+│   ├── 安装 repo 工具并配置镜像（国内推荐清华源）
+│   ├── 初始化 Manifest
+│   │   └── repo init -u https://github.com/minimal-manifest-twrp/platform_manifest_twrp_aosp.git -b twrp-12.1
+│   └── 同步源码
+│       └── repo sync --force-sync
+│
+├── 4. 自动生成设备树（Device Tree）
+│   ├── 使用 aospdtgen（适用于 Android 8.0+ Treble 设备）
+│   │   ├── 安装：pip install aospdtgen
+│   │   ├── 运行：python -m aospdtgen /path/to/boot.img
+│   │   └── 输出：device/<厂商>/<设备代号>/ 目录
+│   └── 使用 twrpdtgen（适用于旧设备）
+│       └── 类似方式，但支持 Android 8.0 以下
+│
+├── 5. 将设备树放入 TWRP 源码
+│   └── 移动生成的设备树文件夹到 twrp源码目录/device/<厂商>/<设备代号>/
+│
+├── 6. 配置编译环境
+│   ├── 进入 TWRP 源码根目录
+│   ├── source build/envsetup.sh
+│   └── lunch omni_<设备代号>-eng
+│       └── 若找不到，检查设备树内是否有 vendorsetup.sh
+│
+├── 7. 编译生成 Recovery 镜像
+│   ├── 普通设备：mka recoveryimage
+│   └── A/B 分区设备：mka bootimage
+│
+├── 8. 获取产物
+│   └── out/target/product/<设备代号>/recovery.img（或 boot.img）
+│
+└── 9. 测试与刷入
+    ├── 安全测试：fastboot boot recovery.img
+    ├── 功能验证：触摸、挂载、ADB、MTP、备份恢复
+    └── 永久刷入：fastboot flash recovery recovery.img
+
