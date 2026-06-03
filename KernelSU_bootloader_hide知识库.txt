@@ -2,18 +2,17 @@
 //time: 2026-06-03 10:04:34.829909
 
 
-method：
+first method:
 TrickyStore
-1. cd /data/adb/tricky_store
-2. If target.txt is broken, you must add the target (app package name) to the file.
-3. If you need to replace the keybox.xml file, the source is: 
-   https://pan.baidu.com/s/143jv7_VG7BvA4dgyoxrpvQ?pwd=root
+1.cd /data/adb/tricky_store
+2.If target.txt is broken, add the target (app package name) to the file.
+3.To replace keybox.xml, use the source:
+https://pan.baidu.com/s/143jv7_VG7BvA4dgyoxrpvQ?pwd=root
 
-second method：
+second method:
 Tricky Store + Tricky-Addon-Update-Target-List
-1. open the root module manager.
-2. find the Tricky Store options.
-3. open the option and choice the target application to hide.
-
+1.Open the root module manager.
+2.Find the Tricky Store options.
+3.Open the option and select the target application to hide.
 
 Enjoy!!!
