@@ -24,13 +24,27 @@ xiaomirom	https://xiaomirom.com/	 由小米发布的任何固件，您可以轻�
 柚坛资源 https://www.uotan.cn/resources/
 Android刷机固件资源平台 https://opusrom.top/  查找并下载你设备的 ROM
 
-内核调校
+内核调校（kernel source）
 社区名称	链接	备注
 XDA Developers	forum.xda-developers.com	内核开发与性能调校讨论的主阵地。
 酷安 (CoolAPK)	www.coolapk.com	可以找到Magisk/KernelSU内核调校模块的使用讨论。
 AOSP开源社区	source.android.com	了解Android系统底层技术最权威的地方。
 Magisk Module 仓库	https://apt.izzysoft.de/	一个存储开源Magisk模块的仓库。
 GitCode	gitcode.net	代码托管平台，可以找到相关模块的开发资源。
+Micode https://github.com/MiCode/Xiaomi_Kernel_OpenSource
+OPPO-source https://github.com/oppo-source
+OnePlusOSS https://github.com/OnePlusOSS
+realme-kernel-opensource https://github.com/realme-kernel-opensource
+vivo https://github.com/search?q=vivo+kernel&type=repositories
+Nubia https://github.com/search?q=Nubia+10+kernel&type=repositories
+lenovo https://github.com/search?q=lenovo%20kernel&type=repositories
+motorola https://github.com/search?q=motorola%20kernel&type=repositories
+Samsung https://github.com/search?q=Samsung+kernel&type=repositories
+Sony https://github.com/sonyxperiadev?tab=repositories&q=kernel+msm
+LG https://github.com/search?q=lge+kernel&type=repositories
+NothingOSS https://github.com/NothingOSS
+Google https://android.googlesource.com/kernel/common/+refs
+LineageOS https://github.com/orgs/LineageOS/repositories?q=kernel
 
 模块开发
 社区名称	链接	备注
