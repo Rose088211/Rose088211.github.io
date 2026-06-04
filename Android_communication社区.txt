@@ -31,6 +31,7 @@ XDA Developers	forum.xda-developers.com	内核开发与性能调校讨论的主�
 AOSP开源社区	source.android.com	了解Android系统底层技术最权威的地方。
 Magisk Module 仓库	https://apt.izzysoft.de/	一个存储开源Magisk模块的仓库。
 GitCode	gitcode.net	代码托管平台，可以找到相关模块的开发资源。
+=====================kernel source=========================
 Micode https://github.com/MiCode/Xiaomi_Kernel_OpenSource
 OPPO-source https://github.com/oppo-source
 OnePlusOSS https://github.com/OnePlusOSS
@@ -45,6 +46,7 @@ LG https://github.com/search?q=lge+kernel&type=repositories
 NothingOSS https://github.com/NothingOSS
 Google https://android.googlesource.com/kernel/common/+refs
 LineageOS https://github.com/orgs/LineageOS/repositories?q=kernel
+======================The end================================
 
 模块开发
 社区名称	链接	备注
