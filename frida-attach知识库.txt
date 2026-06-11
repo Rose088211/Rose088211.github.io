@@ -1,7 +1,11 @@
 //author: Rose0882
 //time: 2026-06-11 11:55:45.255125
 
-针对“命令正确但仍报 process not found”的排查步骤
+尽管Frida作者大胡子一句话就说的很清楚了——“Our injector needs to ptrace() the target briefly while attaching on Linux/Android.”，
+即attach app时只是短暂的使用了ptrace，就用了那么一下下，用完就detach分离掉了。
+如果不能成功attach就不能注入agent.so
+
+因此针对“命令正确但仍报 process not found”的排查步骤
 第一步：使用 PID 直接附加
 
 执行 PID=$(adb shell pidof -s <包名>) 获取进程 ID，然后 frida -U -p $PID。
