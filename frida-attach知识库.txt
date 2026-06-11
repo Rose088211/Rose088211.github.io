@@ -1,0 +1,32 @@
+//author: Rose0882
+//time: 2026-06-11 11:55:45.255125
+
+针对“命令正确但仍报 process not found”的排查步骤
+第一步：使用 PID 直接附加
+
+执行 PID=$(adb shell pidof -s <包名>) 获取进程 ID，然后 frida -U -p $PID。
+
+如果成功 → 问题出在包名解析层（例如多进程、加固Hook）。后续可为该应用写一个别名脚本，自动获取 PID 后附加。
+
+如果失败 → 进入第二步。
+
+第二步：检查 ptrace 占坑
+
+执行 adb shell "cat /proc/$PID/status | grep TracerPid"。
+
+若输出非零 → 应用已自我跟踪。改用 spawn 模式：frida -U -f <包名>。
+
+第三步：检查 SELinux 与 frida-server 权限
+
+执行 adb shell getenforce，若为 Enforcing 则临时关闭：adb shell "su -c setenforce 0"。
+
+确保 frida-server 以 root 运行：adb shell "su -c /data/local/tmp/frida-server &"。
+
+第四步：检查版本一致性
+
+对比 frida --version 与设备端 frida-server --version，必须完全相同。
+
+第五步：如果以上均无效
+
+问题已进入反调试对抗领域，需要针对目标应用的具体防护机制编写绕过脚本。
+frida -U -f package_name -l bypass_self_debugger.js --debug
