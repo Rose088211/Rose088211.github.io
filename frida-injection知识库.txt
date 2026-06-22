@@ -55,6 +55,16 @@ idof com.atest.demo                                         <
 应用出现waiting for debugger解决:
 adb shell am clear-debug-app
 
+frida出现 zygote32 影响解决：
+adb shell "getprop | grep zygote "
+[init.svc.zygote]: [running]
+[init.svc.zygote_ocomp]: [running]
+[init.svc.zygote_tango]: [running]
+[persist.oplus.zygote_ocomp]: [true]
+[persist.sys.system.abnormalboot]: [2026-06-01 11:51:41:zygote reboot by netd]
+[persist.sys.tango_zygote32.start]: [1]        ---->这个属性影响 setprop 为0即可，setprop persist.sys.tango_zygote32.start 0
+[ro.zygote]: [zygote64]
+
 Objection查看所有活动以及利用所有活动
 android hooking list activities/android hooking list services  #1 #枚举activity
 android intent launch_activity 包名.类名.方法         #2 #在 Android 应用中强制启动指定的 Activity（界面页面）。
