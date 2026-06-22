@@ -55,7 +55,7 @@ idof com.atest.demo                                         <
 应用出现waiting for debugger解决:
 adb shell am clear-debug-app
 
-frida出现 zygote32 影响解决：
+frida出现 zygote32 影响frida timeout解决：
 adb shell "getprop | grep zygote "
 [init.svc.zygote]: [running]
 [init.svc.zygote_ocomp]: [running]
