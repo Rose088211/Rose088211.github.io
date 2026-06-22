@@ -9,3 +9,9 @@ Android 13+	Frida 16.x+	需要较新版本
 ART运行时变化：Android 12的ART虚拟机内部结构发生变化，ArtMethod字段布局与之前版本不同
 内存访问限制：Android 12+引入了更严格的内存访问限制，低版本Frida无法正确处理
 安全机制增强：Android 12加强了运行时保护机制
+
+
+frida 枚举zygote/uasp主进程注入；
+大多数兼容32应用的64位手机无法使用fria <= 17.6进行spawn注入
+frida zymbiote 机制注入zygote：
+可以孵化进程但是启动完成前卡住
