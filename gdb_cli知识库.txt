@@ -1,6 +1,24 @@
 //author: Rose0882
 //time: 2026-04-29 17:04:54.673749
 
+当断点命中时，GDB 内部执行的伪代码大致是这样的：
+// 1. 拿到触发的断点编号
+int num = get_breakpoint_number();  // 结果是 2
+
+// 2. 拿到当前指令的地址
+void* addr = get_pc_register();     // 结果是 0x555555555149
+
+// 3. 查符号表，得到函数名
+char* func_name = lookup_symbol(addr); // 结果是 "func"
+
+// 4. 查调试信息，得到文件名和行号
+char* file_name = lookup_file(addr);   // 结果是 "a.c"
+int line_num = lookup_line(addr);      // 结果是 5
+
+// 5. 最后像 printf 一样拼起来打印到屏幕
+printf("Breakpoint %d, %s () at %s:%d", num, func_name, file_name, line_num);
+// 最终输出：Breakpoint 2, func () at a.c:5
+
 GDB 中看 GOT 变化（超常用）
 x/gx &printf@got
 b printf
