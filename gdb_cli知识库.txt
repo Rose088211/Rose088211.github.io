@@ -40,3 +40,5 @@ end
 continue
 info breakpoint
 delete
+info proc mappings
+shell cat /proc/15824/maps | grep -E "(asdfb23b|lewsad)" #name of security so
