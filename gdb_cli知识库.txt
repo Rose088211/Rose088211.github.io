@@ -45,3 +45,5 @@ shell cat /proc/15824/maps | grep -E "(asdfb23b|lewsad)" #name of security so
 info registers #查看通用寄存器（x0-x30）,即tmp草稿本
 print $x0 #查看单个寄存器
 x/10i 0x78E93866E8 #查看ida中内存地址，反汇编代码
+hbreak *0x78E93866E8 #设置断点
+stepi   # 单步一条指令
