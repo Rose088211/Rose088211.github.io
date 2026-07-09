@@ -1,0 +1,13 @@
+// author: Rose0882
+// time: 2026-07-09 17:18:51.126388
+
+steps:
+1. set proxy on cmd shell.
+export http_proxy="http://192.168.1.1:7890"
+export https_proxy="http://192.168.1.1:7890"
+2. download the patch source code.
+wget https://github.com/Ylarod/Florida/archive/refs/tags/17.15.3.zip
+
+3. download the frida binary source code.
+git clone --recursive https://github.com/frida/frida.git
+4. 
