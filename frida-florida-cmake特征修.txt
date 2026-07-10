@@ -30,13 +30,13 @@ git submodule update --init --recursive
 bash```
 cd subprojects/frida-core
 # 应用 frida-core 补丁
-for patch in ../Florida-17.15.3/patches/frida-core/*.patch; do
+for patch in ../../Florida-17.15.3/patches/frida-core/*.patch; do
     patch -p1 < "$patch"
 done
 
 cd subprojects/frida-gum
 # 应用 frida-gum 补丁
-for patch in ../Florida-17.15.3/patches/frida-gum/*.patch; do
+for patch in ../../Florida-17.15.3/patches/frida-gum/*.patch; do
     patch -p1 < "$patch"
 done
 ```
