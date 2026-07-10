@@ -42,6 +42,11 @@ done
 apt update
 apt install -y build-essential git python3 python3-pip meson ninja-build libglib2.0-dev libffi-dev pkg-config nodejs npm valac
 pip3 install --upgrade meson
+mkdir ndk
+cd ndk
+wget https://dl.google.com/android/repository/android-ndk-r29-linux.zip
+unzip android-ndk-r29-linux.zip
+export ANDROID_NDK_ROOT=~/florida_build_within_GGbonds/ndk/android-ndk-r29
 6. touch the buid_frida.sh.
 #!/bin/bash
 # 脚本路径: /home/myuser/florida_build_within_GGbonds/frida/build_frida.sh
@@ -92,6 +97,10 @@ ninja -C build -j$(nproc)
 
 echo "===== 编译完成！====="
 echo "二进制文件位于 build/subprojects/frida-core/src/ 等目录。"
+
+！if the meson build faild
+./configure --host=android-arm64
+
 7.checkout the replace success befor build.
 #如果还有 .rej 文件，说明有补丁未完全应用（或手动修复后未删除）。运行以下查找：
 find /home/myuser/florida_build_within_GGbonds/frida/subprojects -name "*.rej"
