@@ -41,6 +41,7 @@ done
 5. Install dependencies bellow.
 apt update
 apt install -y build-essential git python3 python3-pip meson ninja-build libglib2.0-dev libffi-dev pkg-config nodejs npm valac
+pip3 install --upgrade meson
 6. touch the buid_frida.sh.
 #!/bin/bash
 # 脚本路径: /home/myuser/florida_build_within_GGbonds/frida/build_frida.sh
