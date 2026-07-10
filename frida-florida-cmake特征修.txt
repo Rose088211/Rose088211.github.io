@@ -24,10 +24,11 @@ git submodule update --init --recursive
 #cd subprojects/frida-core
 #git log -1 --oneline
 4. apply the patch use follow commands.
-cd subprojects/frida-core
 # 应用florida补丁
 # 假设补丁位于 ../Florida-17.15.3/patches
+
 bash```
+cd subprojects/frida-core
 # 应用 frida-core 补丁
 for patch in ../Florida-17.15.3/patches/frida-core/*.patch; do
     patch -p1 < "$patch"
