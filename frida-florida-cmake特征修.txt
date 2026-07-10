@@ -32,6 +32,12 @@
 chmod +x build_all.sh
 ./build_all.sh
 ```
+# 手动分步（适合排错）
+python3 check_env.py
+python3 apply_florida_patches.py ~/florida_build/frida ~/florida_build/Florida-17.15.3
+cd ~/florida_build/frida && ./configure --host=android-arm64 --without-prebuilds=toolchain
+python3 patch_minizip.py ~/florida_build/frida
+ninja -C build -j$(nproc)
 
 构建完成后，产物位于：
 ```
