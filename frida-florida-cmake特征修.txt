@@ -55,9 +55,10 @@ apt install -y build-essential git python3 python3-pip meson ninja-build libglib
 pip3 install --upgrade meson
 mkdir ndk
 cd ndk
-wget https://dl.google.com/android/repository/android-ndk-r26d-linux.zip
-unzip android-ndk-r26d-linux.zip
-export ANDROID_NDK_ROOT=/home/myuser/florida_build_within_GGbonds/ndk/android-ndk-r26d
+wget https://dl.google.com/android/repository/android-ndk-r29-linux.zip
+unzip android-ndk-r29-linux.zip
+export ANDROID_NDK_ROOT=/home/myuser/florida_build_within_GGbonds/ndk/android-ndk-r29
+export PATH=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin:$PATH
 6. touch the buid_frida.sh.
 #!/bin/bash
 echo "===== 3. 使用官方构建脚本编译 =====" # 注意：这会在 build/ 目录生成产物，并自动处理 Vala
