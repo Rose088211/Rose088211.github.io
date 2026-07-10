@@ -42,7 +42,7 @@ done
 apt update
 apt install -y build-essential git python3 python3-pip meson ninja-build libglib2.0-dev libffi-dev pkg-config nodejs npm valac
 pip3 install --upgrade meson
-apt install -y git build-essential autoconf autoconf-archive automake libtool flex bison libglib2.0-dev libgraphviz-dev help2man xsltproc weasyprin
+apt install -y git build-essential autoconf autoconf-archive automake libtool flex bison libglib2.0-dev libgraphviz-dev help2man xsltproc weasyprint
 # 回到工作目录
 cd /home/myuser/florida_build_within_GGbonds
 # 克隆 frida 的 vala 仓库
