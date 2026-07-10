@@ -42,23 +42,6 @@ done
 apt update
 apt install -y build-essential git python3 python3-pip meson ninja-build libglib2.0-dev libffi-dev pkg-config nodejs npm valac
 pip3 install --upgrade meson
-apt install -y git build-essential autoconf autoconf-archive automake libtool flex bison libglib2.0-dev libgraphviz-dev help2man xsltproc weasyprint
-# 回到工作目录
-cd /home/myuser/florida_build_within_GGbonds
-# 克隆 frida 的 vala 仓库
-git clone https://github.com/frida/vala.git
-cd vala
-# 使用 Meson 配置和编译 (参考官方指引)
-meson setup build
-ninja -C build
-# 将新编译的 valac 路径添加到 PATH 并导出
-export PATH=/home/myuser/florida_build_within_GGbonds/vala/build:$PATH
-# 验证是否已使用新版本
-which valac
-# 应输出: /home/myuser/florida_build_within_GGbonds/vala/build/valac
-cd /home/myuser/florida_build_within_GGbonds/frida
-# 清理之前的构建残留
-rm -rf build
 6. touch the buid_frida.sh.
 #!/bin/bash
 # 脚本路径: /home/myuser/florida_build_within_GGbonds/frida/build_frida.sh
