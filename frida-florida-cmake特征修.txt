@@ -62,7 +62,7 @@ export ANDROID_NDK_ROOT=~/florida_build_within_GGbonds/ndk/android-ndk-r29
 #!/bin/bash
 echo "===== 3. 使用官方构建脚本编译 =====" # 注意：这会在 build/ 目录生成产物，并自动处理 Vala
 ./configure --host=android-arm64
-./make          # 或者 python releng/meson.py
+make          # 或者 python releng/meson.py
 echo "===== 编译完成！====="
 7.checkout the replace success befor build.
 #如果还有 .rej 文件，说明有补丁未完全应用（或手动修复后未删除）。运行以下查找：
