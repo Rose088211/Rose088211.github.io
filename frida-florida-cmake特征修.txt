@@ -40,6 +40,13 @@ for patch in ../../../Florida-17.15.3/patches/frida-gum/*.patch; do
     patch -p1 < "$patch"
 done
 ```
+cd /home/myuser/florida_build_within_GGbonds/frida/subprojects/frida-core
+patch -p1 --dry-run < ../../../Florida-17.15.3/patches/frida-core/0010-exec-anti-anti-frida.py.patch
+#checking file src/embed-agent.py
+#Reversed (or previously applied) patch detected!  Assume -R? [n] n
+#Apply anyway? [n] n
+#Skipping patch.
+#1 out of 1 hunk ignored
 5. Install dependencies bellow.
 apt update
 apt install -y build-essential git python3 python3-pip meson ninja-build libglib2.0-dev libffi-dev pkg-config nodejs npm valac
