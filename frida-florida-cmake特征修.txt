@@ -23,7 +23,8 @@ run the follow commandline when check the version was wrong.
 #git log -1 --oneline
 4. apply the patch use follow commands.
 cd subprojects/frida-core
-git apply ../../../Florida-17.15.3/patches/frida-core/*.patch
-cd subprojects/frida-gum
-git apply ../../../Florida-17.15.3/patches/frida-gum/*.patch
+# 应用florida补丁
+# 假设补丁位于 ../Florida-17.15.3/patches
+for p in ../Florida-17.15.3/patches/frida-core/*.patch; do patch -p1 < $p; done
+for p in ../Florida-17.15.3/patches/frida-gum/*.patch; do patch -p1 < $p; done
 
