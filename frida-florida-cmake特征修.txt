@@ -15,7 +15,9 @@ cd frida
 git checkout tags/17.15.3
 cd subprojects/frida-core
 git log -1 --oneline 
-run the follow commandline when check the version was wrong.
+cd /home/myuser/florida_build_within_GGbonds/frida
+git submodule update --init --recursive
+! if check result was not the 17.15.3 again, run the follow commandline when check the version was wrong.
 #git submodule foreach --recursive git reset --hard
 #git submodule foreach --recursive git clean -fd
 #git submodule update --init --recursive --force
@@ -25,6 +27,67 @@ run the follow commandline when check the version was wrong.
 cd subprojects/frida-core
 # 应用florida补丁
 # 假设补丁位于 ../Florida-17.15.3/patches
-for p in ../Florida-17.15.3/patches/frida-core/*.patch; do patch -p1 < $p; done
-for p in ../Florida-17.15.3/patches/frida-gum/*.patch; do patch -p1 < $p; done
+bash```
+# 应用 frida-core 补丁
+for patch in ../Florida-17.15.3/patches/frida-core/*.patch; do
+    patch -p1 < "$patch"
+done
 
+# 应用 frida-gum 补丁
+for patch in ../Florida-17.15.3/patches/frida-gum/*.patch; do
+    patch -p1 < "$patch"
+done
+```
+5. Install dependencies bellow.
+apt update
+apt install -y build-essential git python3 python3-pip meson ninja-build libglib2.0-dev libffi-dev pkg-config nodejs npm
+6. touch the buid_frida.sh.
+#!/bin/bash
+# 脚本路径: /home/myuser/florida_build_within_GGbonds/frida/build_frida.sh
+# 用法: chmod +x build_frida.sh && ./build_frida.sh
+
+set -e  # 任何命令失败立即退出
+
+echo "===== 1. 同步子模块到正确版本 ====="
+git submodule update --init --recursive
+
+echo "===== 2. 应用 Florida 补丁 ====="
+# 定义补丁目录（绝对路径，根据实际情况调整）
+PATCH_BASE="/home/myuser/florida_build_within_GGbonds/Florida-17.15.3/patches"
+
+# 应用 frida-core 补丁
+echo "--- 应用 frida-core 补丁 ---"
+cd subprojects/frida-core
+for patch in "$PATCH_BASE"/frida-core/*.patch; do
+    echo "  应用 $patch"
+    if ! patch -p1 -N --dry-run < "$patch" >/dev/null 2>&1; then
+        echo "错误: 补丁 $patch 将失败，请先解决冲突。"
+        echo "可以运行: patch -p1 < $patch 查看详细失败信息。"
+        exit 1
+    fi
+    patch -p1 -N < "$patch"
+done
+cd ../..
+
+# 应用 frida-gum 补丁
+echo "--- 应用 frida-gum 补丁 ---"
+cd subprojects/frida-gum
+for patch in "$PATCH_BASE"/frida-gum/*.patch; do
+    echo "  应用 $patch"
+    if ! patch -p1 -N --dry-run < "$patch" >/dev/null 2>&1; then
+        echo "错误: 补丁 $patch 将失败，请先解决冲突。"
+        echo "可以运行: patch -p1 < $patch 查看详细失败信息。"
+        exit 1
+    fi
+    patch -p1 -N < "$patch"
+done
+cd ../..
+
+echo "===== 3. 配置 Meson ====="
+meson setup build --prefix=/usr/local
+
+echo "===== 4. 编译 ====="
+ninja -C build -j$(nproc)
+
+echo "===== 编译完成！====="
+echo "二进制文件位于 build/subprojects/frida-core/src/ 等目录。"
