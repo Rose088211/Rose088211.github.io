@@ -91,3 +91,33 @@ ninja -C build -j$(nproc)
 
 echo "===== 编译完成！====="
 echo "二进制文件位于 build/subprojects/frida-core/src/ 等目录。"
+7.checkout the replace success befor build.
+#如果还有 .rej 文件，说明有补丁未完全应用（或手动修复后未删除）。运行以下查找：
+find /home/myuser/florida_build_within_GGbonds/frida/subprojects -name "*.rej"
+
+#进入相应子模块，用 --dry-run -N 检查每个补丁是否已经应用（不会修改文件）
+cd /home/myuser/florida_build_within_GGbonds/frida/subprojects/frida-core
+for patch in /home/myuser/florida_build_within_GGbonds/Florida-17.15.3/patches/frida-core/*.patch; do
+    echo "Checking $patch ..."
+    patch -p1 --dry-run -N < "$patch"
+    if [ $? -eq 0 ]; then
+        echo "  ✓ Success (already applied or no changes needed)"
+    else
+        echo "  ✗ FAILED! This patch is not fully applied."
+    fi
+done
+
+#对 frida-gum 同样操作
+cd /home/myuser/florida_build_within_GGbonds/frida/subprojects/frida-gum
+for patch in /home/myuser/florida_build_within_GGbonds/Florida-17.15.3/patches/frida-gum/*.patch; do
+    echo "Checking $patch ..."
+    patch -p1 --dry-run -N < "$patch"
+    if [ $? -eq 0 ]; then
+        echo "  ✓ Success (already applied or no changes needed)"
+    else
+        echo "  ✗ FAILED! This patch is not fully applied."
+    fi
+done
+
+如果所有补丁都输出类似 patch: **** The -N option will ignore already applied patches 并返回成功（0），说明已全部应用。
+如果某个补丁显示 Hunk #1 FAILED，则需要再次手动修复。
