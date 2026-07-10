@@ -83,3 +83,20 @@ done
 
 如果所有补丁都输出类似 patch: **** The -N option will ignore already applied patches 并返回成功（0），说明已全部应用。
 如果某个补丁显示 Hunk #1 FAILED，则需要再次手动修复。
+
+
+中文描述，每一步的目的都很清晰：
+
+第 1 步：设置代理，确保能顺利下载 GitHub 资源（如果你在大陆或内网环境）。
+
+第 2 步：下载 Florida 补丁源码包（版本 17.15.3），解压待用。
+
+第 3 步：克隆官方 Frida 仓库，切换到对应 tag，并递归更新子模块（这一步反复检查版本，确保所有子模块都对齐到 17.15.3，避免因版本错乱导致补丁失败）。
+
+第 4 步：应用 Florida 提供的补丁（分别对 frida-core 和 frida-gum 子模块打补丁），这是定制的核心。
+
+第 5 步：安装编译依赖（build-essential、meson、ninja 等）以及下载 Android NDK（r29），并设置环境变量，为交叉编译做准备。
+
+第 6 步：编写一个简单的构建脚本，实际使用 Frida 自带的 ./make（或 python releng/meson.py）进行编译。
+
+第 7 步：检查补丁是否全部成功应用（通过查找 .rej 残留文件，以及用 --dry-run 模拟补丁应用来验证），确保没有冲突或未应用的补丁。
