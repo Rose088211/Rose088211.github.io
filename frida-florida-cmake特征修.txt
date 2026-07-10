@@ -48,6 +48,7 @@ patch -p1 --dry-run < ../../../Florida-17.15.3/patches/frida-core/0010-exec-anti
 #Skipping patch.
 #1 out of 1 hunk ignored
 chmod +x /home/myuser/florida_build_within_GGbonds/frida/subprojects/frida-core/src/anti-anti-frida.py
+cp /home/myuser/florida_build_within_GGbonds/frida/subprojects/frida-core/src/anti-anti-frida.py /home/myuser/florida_build_within_GGbonds/frida/anti-anti-frida.py
 5. Install dependencies bellow.
 apt update
 apt install -y build-essential git python3 python3-pip meson ninja-build libglib2.0-dev libffi-dev pkg-config nodejs npm valac
