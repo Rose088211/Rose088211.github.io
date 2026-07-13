@@ -1,255 +1,467 @@
-# 0x1 frida 编译流程
+//author: Rose0882
+//time: 
 
-> 建立一个项目目录并拉下frida源码，并进入项目目录
+# Frida Florida Android arm64 构建指南
+## 版本: 2.0 (通用健壮版)
+## 日期: 2026-07-11
+## 基于实际成功构建经验，支持在任意 Linux 环境下稳定复现
 
-```shell
-git clone --recurse-submodules -b 16.2.1 https://github.com/frida/frida
+---
+
+## 目录
+- [快速开始](#快速开始)
+- [详细步骤](#详细步骤)
+- [脚本说明](#脚本说明)
+- [常见问题](#常见问题)
+- [手动构建流程](#手动构建流程)
+
+---
+
+## 快速开始
+
+### 方式一：一键构建（推荐）
+
+```bash
+# 1. 下载构建工具集（将以下 4 个脚本放在同一目录）
+#    - build_all.sh         一键构建主脚本
+#    - check_env.py         环境检查脚本
+#    - apply_florida_patches.py  Florida 补丁应用脚本
+#    - patch_minizip.py     minizip-ng 兼容性修复脚本
+
+# 2. 执行一键构建
+chmod +x build_all.sh
+./build_all.sh
+```
+
+构建完成后，产物位于：
+```
+~/florida_build/frida/build/subprojects/frida-core/server/frida-server
+```
+
+---
+
+## 详细步骤
+
+### 前置要求
+
+| 项目 | 最低要求 | 推荐配置 |
+|------|---------|---------|
+| 操作系统 | Linux x86_64 | Ubuntu 20.04+ / Debian 11+ |
+| Python | 3.8+ | 3.10+ |
+| 内存 | 4 GB | 8 GB+ |
+| 磁盘空间 | 20 GB | 50 GB+ |
+| 网络 | 可访问 GitHub | - |
+
+### 步骤 1：环境检查
+
+```bash
+python3 check_env.py
+```
+
+检查内容：
+- ✓ 操作系统和架构
+- ✓ Python 版本
+- ✓ 内存和磁盘空间
+- ✓ 基础工具（git, curl, patch, unzip）
+- ✓ 构建工具（meson, ninja, gperf, gcc, make）
+- ✓ Vala 编译器（Frida 优化版）
+- ✓ Android NDK
+
+### 步骤 2：安装基础依赖
+
+```bash
+sudo apt update && sudo apt upgrade -y
+sudo apt install -y \
+    build-essential \
+    meson \
+    ninja-build \
+    gperf \
+    git \
+    curl \
+    python3 \
+    python3-pip \
+    libssl-dev \
+    zlib1g-dev \
+    autoconf \
+    automake \
+    libtool \
+    python3-lief
+```
+
+### 步骤 3：安装 Frida-optimized Vala
+
+```bash
+cd /tmp
+git clone https://github.com/frida/vala.git
+cd vala
+git checkout 0.58.0-frida
+./autogen.sh --prefix=/usr/local
+make -j$(nproc)
+sudo make install
+
+# 添加库路径
+echo "/usr/local/lib/x86_64-linux-gnu/vala-0.58" | sudo tee /etc/ld.so.conf.d/vala.conf
+sudo ldconfig
+
+# 验证
+valac --version
+```
+
+### 步骤 4：下载 Android NDK r29
+
+```bash
+mkdir -p ~/florida_build/ndk
+cd ~/florida_build/ndk
+curl -L "https://dl.google.com/android/repository/android-ndk-r29-linux.zip" -o ndk.zip
+unzip -q ndk.zip
+export ANDROID_NDK_ROOT=$(pwd)/android-ndk-r29
+```
+
+### 步骤 5：克隆 Frida 源码
+
+```bash
+cd ~/florida_build
+git clone --depth 1 --branch 17.15.3 https://github.com/frida/frida.git
 cd frida
+git submodule update --init --recursive --depth 1
 ```
 
-此时执行ls ，看到的文件应当是如此
+### 步骤 6：下载 Florida 补丁
 
-```log
-(base) r@ubuntu20:~/Documents/FRIDA/frida$ ls
-BSDmakefile      COPYING     frida-gum     frida.sln    Makefile.freebsd.mk  Makefile.toolchain.mk
-build            frida-clr   frida-node    frida-swift  Makefile.linux.mk    README.md
-config.mk        frida-core  frida-python  frida-tools  Makefile.macos.mk    releng
-CONTRIBUTING.md  frida-go    frida-qml     Makefile     Makefile.sdk.mk
+```bash
+cd ~/florida_build
+curl -L "https://github.com/Ylarod/Florida/archive/refs/tags/17.15.3.zip" -o florida.zip
+unzip -q florida.zip
+# 解压后目录: Florida-17.15.3
 ```
 
-> 一键 安装nodejs22
+### 步骤 7：应用 Florida 补丁
 
-```shell
-# 构造下载 URL
-NODE_TAR_URL="https://nodejs.org/dist/v22.12.0/node-v22.12.0-linux-x64.tar.xz"
-wget $NODE_TAR_URL 
-# 解压 Node.js 安装包到用户目录
-tar -xf node-v22.12.0-linux-x64.tar.xz -C $HOME/bin
-rm -r node-v22.12.0-linux-x64.tar.xz
-# 设置 NODE_HOME 和 PATH
-export NODE_HOME=$HOME/bin/node-v22.12.0-linux-x64
-export PATH=${NODE_HOME}/bin:$PATH
-# 打印 Node.js 版本以确认安装成功
-node -v
+```bash
+# 使用补丁脚本（推荐）
+python3 apply_florida_patches.py ~/florida_build/frida ~/florida_build/Florida-17.15.3
 ```
 
-```log
-(base) r@ubuntu20:~/Documents/FRIDA/frida$ # 构造下载 URL
-(base) r@ubuntu20:~/Documents/FRIDA/frida$ NODE_TAR_URL="https://nodejs.org/dist/v22.12.0/node-v22.12.0-linux-x64.tar.xz"
-(base) r@ubuntu20:~/Documents/FRIDA/frida$ wget $NODE_TAR_URL 
---2024-12-09 23:31:18--  https://nodejs.org/dist/v22.12.0/node-v22.12.0-linux-x64.tar.xz
-正在解析主机 nodejs.org (nodejs.org)... 198.18.1.205
-正在连接 nodejs.org (nodejs.org)|198.18.1.205|:443... 已连接。
-已发出 HTTP 请求，正在等待回应... 200 OK
-长度： 29734248 (28M) [application/x-xz]
-正在保存至: “node-v22.12.0-linux-x64.tar.xz”
+脚本会自动：
+- 按顺序应用所有 frida-core 补丁（10个）
+- 按顺序应用所有 frida-gum 补丁（1个）
+- 如果 rpc.vala 补丁失败，自动手动修复
+- 跳过已应用的补丁（幂等安全）
 
-node-v22.12.0-linux-x64.tar.xz          100%[============================================================================>]  28.36M  8.89MB/s    用时 3.2s  
+### 步骤 8：配置构建
 
-2024-12-09 23:31:21 (8.89 MB/s) - 已保存 “node-v22.12.0-linux-x64.tar.xz” [29734248/29734248])
-
-(base) r@ubuntu20:~/Documents/FRIDA/frida$ # 解压 Node.js 安装包到用户目录
-(base) r@ubuntu20:~/Documents/FRIDA/frida$ tar -xf node-v22.12.0-linux-x64.tar.xz -C $HOME/bin
-(base) r@ubuntu20:~/Documents/FRIDA/frida$ # 设置 NODE_HOME 和 PATH
-(base) r@ubuntu20:~/Documents/FRIDA/frida$ export NODE_HOME=$HOME/bin/node-v22.12.0-linux-x64
-(base) r@ubuntu20:~/Documents/FRIDA/frida$ export PATH=${NODE_HOME}/bin:$PATH
-(base) r@ubuntu20:~/Documents/FRIDA/frida$ # 打印 Node.js 版本以确认安装成功
-(base) r@ubuntu20:~/Documents/FRIDA/frida$ node -v
-v22.12.0
-(base) r@ubuntu20:~/Documents/FRIDA/frida$ ls
-BSDmakefile      COPYING     frida-go    frida-python  frida-swift  Makefile.freebsd.mk  Makefile.sdk.mk                 README.md
-config.mk        frida-clr   frida-gum   frida-qml     frida-tools  Makefile.linux.mk    Makefile.toolchain.mk           releng
-CONTRIBUTING.md  frida-core  frida-node  frida.sln     Makefile     Makefile.macos.mk    node-v22.12.0-linux-x64.tar.xz
-(base) r@ubuntu20:~/Documents/FRIDA/frida$ rm -r node-v22.12.0-linux-x64.tar.xz
-(base) r@ubuntu20:~/Documents/FRIDA/frida$ 
+```bash
+cd ~/florida_build/frida
+./configure --host=android-arm64 --without-prebuilds=toolchain
 ```
 
-> 再make一下
+> **重要**：configure 会自动下载 minizip-ng 等子项目到 `subprojects/` 目录
 
-```shell
-make
+### 步骤 9：修复 minizip-ng 兼容性
+
+```bash
+# configure 完成后执行
+python3 patch_minizip.py ~/florida_build/frida
 ```
 
-> 安装ndk
+修复内容（自动检测所有 minizip-ng 目录）：
+1. **zlib-ng.h 不存在** → 强制使用标准 zlib.h
+2. **ftello/fseeko 未声明** → 定义 NO_FSEEKO
+3. **SHA 函数缺失** → 添加空实现
+4. **MZ_ZIP_NO_CRYPTO 不生效** → 源文件顶部强制定义
+5. **meson.build 缺少 Android 配置** → 添加平台检测宏
 
-执行以下命令，查看所需要的ndk版本，得到以下输出
+### 步骤 10：编译
 
-```shell
-cat releng/setup-env.sh |grep "ndk_required="
+```bash
+cd ~/florida_build/frida
+ninja -C build -j$(nproc)
 ```
 
-```log
-(base) r@ubuntu20:~/Documents/FRIDA/frida$ cat releng/setup-env.sh |grep "ndk_required="
-  ndk_required=25
+预计耗时：30-60 分钟（取决于 CPU 性能）
+
+### 步骤 11：验证产物
+
+```bash
+# 检查架构
+file ~/florida_build/frida/build/subprojects/frida-core/server/frida-server
+# 预期输出: ELF 64-bit LSB shared object, ARM aarch64...
+
+# 部署到设备
+adb push ~/florida_build/frida/build/subprojects/frida-core/server/frida-server /data/local/tmp/
+adb shell chmod 755 /data/local/tmp/frida-server
+adb shell /data/local/tmp/frida-server --listen=0.0.0.0:27042 --daemon
 ```
 
-一键安装ndk25
+---
 
-```shell
-wget https://dl.google.com/android/repository/android-ndk-r25c-linux.zip
-unzip android-ndk-r25c-linux.zip $HOME/bin/
-rm -r android-ndk-r25c-linux.zip
-export ANDROID_NDK_ROOT=$HOME/bin/android-ndk-r25c
-export PATH=$ANDROID_NDK_ROOT:$PATH
-ndk-build -v
+## 脚本说明
+
+### 文件清单
+
+| 脚本 | 用途 | 语言 |
+|------|------|------|
+| `build_all.sh` | 一键构建主脚本，整合所有步骤 | Bash |
+| `check_env.py` | 环境前置检查，确保构建条件满足 | Python |
+| `apply_florida_patches.py` | 应用 Florida 补丁，含自动修复逻辑 | Python |
+| `patch_minizip.py` | 修复 minizip-ng Android 兼容性问题 | Python |
+
+### build_all.sh 选项
+
+```bash
+./build_all.sh [选项]
+
+选项:
+  -h, --help          显示帮助
+  --skip-env-check    跳过环境检查
+  --skip-ndk          跳过 NDK 下载
+  --skip-frida        跳过 Frida 源码克隆
+  --skip-florida      跳过 Florida 下载
+  --skip-patches      跳过补丁应用
+  --skip-configure    跳过配置步骤
+  --build-only        仅执行编译步骤
+  --clean             清理构建目录后重新开始
+
+环境变量:
+  BUILD_DIR           构建目录 (默认: ~/florida_build)
+  NUM_JOBS            编译线程数 (默认: nproc)
+  ANDROID_NDK_ROOT    NDK 路径
 ```
 
-> 安装依赖
+### 常用场景
 
-```shell
-sudo apt update
-sudo apt-get install build-essential git lib32stdc++-9-dev libc6-dev-i386
+```bash
+# 完整构建
+./build_all.sh
+
+# 重新编译（代码已修改）
+./build_all.sh --build-only
+
+# 清理后重新构建
+./build_all.sh --clean
+
+# 自定义构建目录
+BUILD_DIR=/opt/frida_build ./build_all.sh
 ```
 
-```shell
+---
+
+## 常见问题
+
+### Q1: 环境检查失败怎么办？
+
+根据检查结果的提示信息安装缺失的依赖。常见缺失：
+- **gperf**: `sudo apt install gperf`
+- **Vala**: 按步骤 3 安装 Frida-optimized Vala
+- **NDK**: 按步骤 4 下载 NDK r29
+
+### Q2: 补丁 hunk 失败
+
+`apply_florida_patches.py` 会自动尝试修复 `rpc.vala`。
+如果其他补丁失败，可以：
+1. 检查 Frida 版本是否完全匹配（必须是 17.15.3）
+2. 手动编辑失败的文件，参考补丁文件内容
+
+### Q3: minizip-ng 相关编译错误
+
+确保已执行 `patch_minizip.py`，且在 `configure` **之后**执行。
+
+常见错误及修复：
+
+| 错误信息 | 原因 | 修复 |
+|---------|------|------|
+| `zlib-ng.h: No such file or directory` | Android NDK 只有标准 zlib | patch_minizip.py 步骤 1 |
+| `implicit declaration of function 'ftello'` | bionic libc 缺少该函数 | patch_minizip.py 步骤 2 |
+| `undefined symbol: mz_crypt_sha_create` | 禁用加密后缺少实现 | patch_minizip.py 步骤 3 & 4 |
+
+### Q4: Vala 相关错误
+
+```
+error: incompatible Vala compiler version
+```
+
+原因：使用了系统自带的 Vala，而不是 Frida 优化版。
+
+解决：
+```bash
+# 确认安装的是 frida 版本
+valac --version
+which valac
+
+# 如果指向系统路径，调整 PATH
+export PATH=/usr/local/bin:$PATH
+```
+
+### Q5: ANDROID_NDK_ROOT 未设置
+
+```
+./configure: error: ANDROID_NDK_ROOT must be set
+```
+
+解决：
+```bash
+export ANDROID_NDK_ROOT=~/florida_build/ndk/android-ndk-r29
+```
+
+### Q6: No C compiler found
+
+确保使用 `--without-prebuilds=toolchain` 参数：
+```bash
+./configure --host=android-arm64 --without-prebuilds=toolchain
+```
+
+### Q7: anti-anti-frida.py 路径错误
+
+```
+python3: can't open file '.../frida/subprojects/frida-core/src/anti-anti-frida.py': No such file or directory
+anti-anti-frida error. Code: 512
+```
+
+原因：Florida 补丁 `0010-exec-anti-anti-frida.py.patch` 修改了 `embed-agent.py`，但路径计算多了一层 `frida/`。
+
+解决：编辑 `subprojects/frida-core/src/embed-agent.py`，将路径中的 `../../../../frida/subprojects/` 改为 `../../../../subprojects/`：
+```bash
+sed -i 's|/../../../../frida/subprojects/|/../../../../subprojects/|' \
+    ~/florida_build/frida/subprojects/frida-core/src/embed-agent.py
+```
+
+### Q8: ModuleNotFoundError: No module named 'lief'
+
+```
+anti-anti-frida error. Code: 256
+ModuleNotFoundError: No module named 'lief'
+```
+
+原因：`anti-anti-frida.py` 脚本依赖 `lief` 库来修改 ELF 二进制文件。
+
+解决：
+```bash
 pip3 install lief
+# 如果系统限制 pip 安装，使用：
+pip3 install --break-system-packages lief
 ```
 
-> 编译
+### Q9: redefinition of 'mz_crypt_sha_*' 函数
 
-查看编译选项
-
-```shell
-(frida-compile) r@ubuntu20:~/Documents/FRIDA/frida$ make
-make[1]: 进入目录“/home/r/Documents/FRIDA/frida”
-
-Usage: make TARGET [VARIABLE=value]
-
-Where TARGET specifies one or more of:
-
-  /* gum */
-  gum-linux-x86                     Build for Linux/x86
-  gum-linux-x86_64                  Build for Linux/x86-64
-  gum-linux-x86-thin                Build for Linux/x86 without cross-arch support
-  gum-linux-x86_64-thin             Build for Linux/x86-64 without cross-arch support
-  gum-linux-x86_64-gir              Build for Linux/x86-64 with shared GLib and GIR
-  gum-linux-arm                     Build for Linux/arm
-  gum-linux-armbe8                  Build for Linux/armbe8
-  gum-linux-armhf                   Build for Linux/armhf
-......等等
+```
+error: redefinition of 'mz_crypt_sha_delete'
 ```
 
-编译安卓arm64的frida
+原因：`patch_minizip.py` 旧版本在已有 SHA 函数的文件中重复添加了定义。
 
-```shell
-make core-android-arm64
+解决：更新 `patch_minizip.py` 到最新版本（会自动检测已有函数，只补充缺失的）。
+如果已手动修改过，从 `.bak` 备份恢复后重新运行脚本：
+```bash
+find ~/florida_build/frida -name "mz_crypt.c.bak" -exec sh -c 'cp "$1" "${1%.bak}"' _ {} \;
+python3 patch_minizip.py ~/florida_build/frida
 ```
 
-编译完成
+---
 
-```log
-Installing lib/base/libfrida-base-1.0.a to /home/r/Documents/FRIDA/frida/build/frida-android-arm64/lib
-Installing lib/base/frida-base.h to /home/r/Documents/FRIDA/frida/build/frida-android-arm64/include/frida-1.0
-Installing lib/base/frida-base-1.0.vapi to /home/r/Documents/FRIDA/frida/build/frida-android-arm64/share/vala/vapi
-Installing lib/payload/libfrida-payload-1.0.a to /home/r/Documents/FRIDA/frida/build/frida-android-arm64/lib
-Installing lib/payload/frida-payload.h to /home/r/Documents/FRIDA/frida/build/frida-android-arm64/include/frida-1.0
-Installing lib/payload/frida-payload-1.0.vapi to /home/r/Documents/FRIDA/frida/build/frida-android-arm64/share/vala/vapi
-Installing lib/gadget/frida-gadget.so to /home/r/Documents/FRIDA/frida/build/frida-android-arm64/lib/frida/64
-Installing src/api/frida-core.h to /home/r/Documents/FRIDA/frida/build/frida-android-arm64/include/frida-1.0
-Installing src/api/frida-core-1.0.vapi to /home/r/Documents/FRIDA/frida/build/frida-android-arm64/share/vala/vapi
-Installing src/api/frida-core-1.0.deps to /home/r/Documents/FRIDA/frida/build/frida-android-arm64/share/vala/vapi
-Installing src/api/libfrida-core-1.0.a to /home/r/Documents/FRIDA/frida/build/frida-android-arm64/lib
-Installing server/frida-server to /home/r/Documents/FRIDA/frida/build/frida-android-arm64/bin
-Installing portal/frida-portal to /home/r/Documents/FRIDA/frida/build/frida-android-arm64/bin
-Installing inject/frida-inject to /home/r/Documents/FRIDA/frida/build/frida-android-arm64/bin
-Installing /home/r/Documents/FRIDA/frida/frida-core/lib/selinux/frida-selinux.h to /home/r/Documents/FRIDA/frida/build/frida-android-arm64/include/frida-1.0
-Installing /home/r/Documents/FRIDA/frida/build/tmp-android-arm64/frida-core/meson-private/frida-base-1.0.pc to /home/r/Documents/FRIDA/frida/build/frida-android-arm64/lib/pkgconfig
-Installing /home/r/Documents/FRIDA/frida/build/tmp-android-arm64/frida-core/meson-private/frida-payload-1.0.pc to /home/r/Documents/FRIDA/frida/build/frida-android-arm64/lib/pkgconfig
-Installing /home/r/Documents/FRIDA/frida/build/tmp-android-arm64/frida-core/meson-private/frida-core-1.0.pc to /home/r/Documents/FRIDA/frida/build/frida-android-arm64/lib/pkgconfig
-make[1]: 离开目录“/home/r/Documents/FRIDA/frida”
+## 手动构建流程
+
+> 不使用脚本，完全手动操作的流程
+> 适合需要深入理解每一步的开发者
+
+### 1. 环境准备
+
+```bash
+# 安装依赖
+sudo apt install -y build-essential meson ninja-build gperf git curl python3
+
+# 安装 Frida Vala
+cd /tmp && git clone https://github.com/frida/vala.git
+cd vala && git checkout 0.58.0-frida
+./autogen.sh --prefix=/usr/local && make -j$(nproc) && sudo make install
+echo "/usr/local/lib/x86_64-linux-gnu/vala-0.58" | sudo tee /etc/ld.so.conf.d/vala.conf
+sudo ldconfig
+
+# 下载 NDK
+mkdir -p ~/florida_build/ndk
+curl -L "https://dl.google.com/android/repository/android-ndk-r29-linux.zip" -o ~/florida_build/ndk/ndk.zip
+unzip -q ~/florida_build/ndk/ndk.zip -d ~/florida_build/ndk/
+export ANDROID_NDK_ROOT=~/florida_build/ndk/android-ndk-r29
 ```
 
-查看编译后的文件
+### 2. 源码和补丁
 
-```shell
-cd build/frida-android-arm64/bin && ls
+```bash
+cd ~/florida_build
+
+# Frida
+git clone --depth 1 --branch 17.15.3 https://github.com/frida/frida.git
+cd frida && git submodule update --init --recursive --depth 1
+cd ..
+
+# Florida
+curl -L "https://github.com/Ylarod/Florida/archive/refs/tags/17.15.3.zip" -o florida.zip
+unzip -q florida.zip
 ```
 
-```log
-(frida-compile) r@ubuntu20:~/Documents/FRIDA/frida$ cd build/frida-android-arm64/bin && ls
-frida-inject  frida-portal  frida-server  gum-graft
-(frida-compile) r@ubuntu20:~/Documents/FRIDA/frida/build/frida-android-arm64/bin$ 
+### 3. 应用补丁
+
+```bash
+# frida-core 补丁
+cd ~/florida_build/frida/subprojects/frida-core
+for p in ~/florida_build/Florida-17.15.3/patches/frida-core/*.patch; do
+    echo "Applying: $(basename $p)"
+    patch -p1 -N < "$p" || true
+done
+
+# frida-gum 补丁
+cd ~/florida_build/frida/subprojects/frida-gum
+for p in ~/florida_build/Florida-17.15.3/patches/frida-gum/*.patch; do
+    echo "Applying: $(basename $p)"
+    patch -p1 -N < "$p" || true
+done
+
+# 手动修复 rpc.vala（如果补丁失败）
+# 编辑 lib/base/rpc.vala，添加 getRpcStr 函数
 ```
 
-# 0x2 魔改frida（与上文区分，单独食用）
-{
-  "魔改frida-server正确步骤": {
-    "总体说明": "核心原则：先完整初始化原始Frida项目，再对其中自动检出的frida-core子模块单独应用魔改补丁。",
-    "详细步骤": [
-      {
-        "步骤": 1,
-        "操作": "克隆完整Frida项目并初始化",
-        "命令": "git clone --recurse-submodules https://github.com/frida/frida.git\ncd frida\n# 此时项目内已包含frida-core子目录，无需单独克隆覆盖",
-        "说明": "使用`--recurse-submodules`参数确保一次性克隆所有子模块，这是正确的基础。"
-      },
-      {
-        "步骤": 2,
-        "操作": "进入核心子模块并创建补丁目录",
-        "命令": "cd frida-core\nmkdir -p .patches",
-        "说明": "所有魔改操作都在`frida-core/`子目录内进行。`.patches`是存放补丁的标准目录。"
-      },
-      {
-        "步骤": 3,
-        "操作": "获取魔改补丁",
-        "命令": "将Florida项目(https://github.com/Ylarod/Florida)中`/patches/frida-core/`下的所有`.patch`文件，复制到当前`frida-core/.patches/`目录。",
-        "说明": "无需克隆整个Florida项目，只需其补丁文件。确保补丁文件直接放在`.patches/`下。"
-      },
-      {
-        "步骤": 4,
-        "操作": "应用魔改补丁到源代码",
-        "命令": "git am .patches/*.patch",
-        "说明": "此步骤将修改`frida:rpc`、二进制名等特征。若应用失败，尝试`git apply`命令。"
-      },
-      {
-        "步骤": 5,
-        "操作": "配置和编译 (使用Meson)",
-        "命令": "./configure --host=android-arm64\nmake",
-        "说明": "注意：原Frida项目已改用**Meson**构建系统。上述`configure`和`make`是传统方式，**很可能失败或不适用**。正确命令通常为：`meson setup build --cross-file ...` 和 `ninja -C build`，具体需参考项目内`releng/`目录的交叉编译配置。"
-      },
-      {
-        "步骤": 6,
-        "操作": "查找编译产物",
-        "路径": "在`frida-core/build/`目录下（或子目录如`server/`）查找生成的`frida-server`可执行文件。",
-        "说明": "成功编译后在此处。"
-      },
-      {
-        "步骤": 7,
-        "操作": "(可选) 深度二进制去特征",
-        "命令": "将生成的`frida-server`与Florida项目中的`anti-anti-frida.py`脚本放于同目录，运行：\npython3 anti-anti-frida.py frida-server",
-        "说明": "此步骤使用LIEF库进一步修改二进制内的字符串，隐蔽性更强，但非必需。"
-      }
-    ],
-    "关键纠错点": [
-      "错误：用克隆的frida-core覆盖原目录。正确：frida-core是子模块，步骤1的`--recurse-submodules`已自动将其克隆在正确位置。",
-      "错误：补丁目录名和位置。正确：补丁应放在`frida-core/.patches/`，而非任意`patch/`目录。",
-      "错误：构建系统。正确：Frida使用Meson+Ninja，而非传统的`./configure && make`，需使用项目提供的交叉编译命令。"
-    ]
-  }
-}
+### 4. 配置与修复
 
+```bash
+cd ~/florida_build/frida
+./configure --host=android-arm64 --without-prebuilds=toolchain
 
-# 0x3 运行测试
-
-> 这里换个端口，就是全绿
-
-```shell
-cd build/frida-android-arm64/bin
-adb push frida-server /data/local/tmp
-adb shell
-chmod +x frida-server
-./frida-server -l 127.0.0.1:12345
+# configure 完成后，修复 minizip-ng
+# （需要在 subprojects/minizip-ng/ 等 3 个目录中分别修改）
+# 详见 patch_minizip.py 中的逻辑
 ```
 
-```shell
-frida -H 127.0.0.1:12345 -f com.yimian.envcheck
+### 5. 编译
+
+```bash
+ninja -C build -j$(nproc)
 ```
 
-![](images/2024-12-10-01-06-20-image.png)
+---
 
-# 0x4 参考
+## 构建产物
 
-> [GitHub - Ylarod/Florida: 基础反检测 frida-server / Basic anti-detection frida-server](https://github.com/Ylarod/Florida/tree/main)
-> 
-> [GitHub - hluwa/Patchs: strongR-frida](https://github.com/hluwa/Patchs)
-> 
-> [[原创]FRIDA 最新版编译 | 16.0.9-Android安全-看雪-安全社区|安全招聘|kanxue.com](https://bbs.kanxue.com/thread-276076.htm)
+| 产物 | 路径 |
+|------|------|
+| frida-server | `build/subprojects/frida-core/server/frida-server` |
+| frida-agent.so | `build/subprojects/frida-core/lib/agent/frida-agent.so` |
+| frida-gadget.so | `build/subprojects/frida-core/lib/gadget/frida-gadget.so` |
+| frida-inject | `build/subprojects/frida-core/tools/frida-inject` |
+
+---
+
+## 注意事项
+
+1. **版本匹配**：Frida、Florida、NDK 版本必须对应，本指南基于 17.15.3 + NDK r29
+2. **minizip-ng 修复时机**：必须在 `configure` 之后、`ninja` 之前执行
+3. **幂等性**：所有 Python 脚本都支持重复执行（会自动检测已修复的内容）
+4. **备份机制**：Python 脚本修改文件前会自动创建 `.bak` 备份
+5. **网络要求**：构建过程中需要下载大量依赖，确保网络畅通
+
+---
+
+## 参考链接
+
+- Frida 官方仓库: https://github.com/frida/frida
+- Florida 补丁: https://github.com/Ylarod/Florida
+- Frida Vala: https://github.com/frida/vala
+- Android NDK: https://developer.android.com/ndk
