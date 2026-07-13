@@ -121,8 +121,9 @@ export ANDROID_NDK_ROOT=$(pwd)/android-ndk-r29
 
 ```bash
 cd ~/florida_build
-git clone --depth 1 --branch 17.15.3 https://github.com/frida/frida.git
+git clone https://github.com/frida/frida.git
 cd frida
+git checkout 17.15.3
 git submodule update --init --recursive --depth 1
 ```
 
