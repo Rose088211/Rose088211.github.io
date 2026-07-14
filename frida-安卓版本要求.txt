@@ -15,6 +15,7 @@ frida 枚举zygote/uasp主进程注入；
 大多数兼容32应用的64位手机无法使用fria <= 17.6进行spawn注入
 frida Zygote + Symbiote（共生体）：
 可以孵化进程但是启动完成前卡住fria >= 17.6, 已知frida 17.6.0存在bug无法正常启动，17.15.1已修复。
+frida>=17.9.0 eBPF程序暂停目标程序决定是否注入运行在内核态，不需要ptrace附加目标进程，也不会在目标进程的/proc/pid/status中留下TracerPid痕迹，具有天然的反检测优势。
 
 spawn → attach → create_script → load → resume
 这个毫秒级速度远快于 AMS（ActivityManagerService）启动超时的 10 秒限制，完美地避开了 Android 系统的启动看门狗（Watchdog）。
