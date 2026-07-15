@@ -8,7 +8,9 @@ Frida 检测方法总览（补充）  【安全厂商视角 - 用户态可行性
 │  ├─ 线程名检测：遍历 /proc/self/task/*/comm，匹配 gum-js-loop、gmain 等异常线程名 【✅】
 │  ├─ TracerPid 检测：读取 /proc/self/status，发现调试附加行为，检查 wchan 及附加链路 【✅】
 │  ├─ ptrace 自保护：应用启动早期抢占调试附加路径 【✅】（应用自身ptrace(PTRACE_TRACEME) 可行）
-│  └─ 信号处理器检测：检查关键线程的 signal handler 是否被替换 【✅】（通过 sigaction 读取对比 libc 默认值）
+│  └─ 信号处理器检测（底层反调试）：检查关键线程的 signal handler 是否被替换 【✅】（Linux 系统调用 sigaction()，读取当前进程为 SIGSEGV（段错误）等关键信号注册的处理函数地址。
+│     将读取到的地址与 libc.so 中的默认函数地址 进行硬比对。
+│     Frida 为了捕获崩溃异常，会替换这些处理器，导致地址偏移发生变化。一旦发现地址变了，立即判定为被 Hook。）
 ├─ 2.网络与端口检测
 │  ├─ 端口检测：检查本机监听端口，重点关注 27042/27043 及异常 loopback 端口 【✅】（读取 /proc/net/tcp，无需 root）
 │  ├─ /proc/net/tcp 枚举 + D-Bus REJECT 主动探测 【✅】（可连接本地端口发送特征包）
