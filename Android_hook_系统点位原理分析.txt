@@ -1,10 +1,13 @@
+//author: Rose0882
+//time：
+
 用户点击Launcher图标
 │
 ├── Launcher 调用AMS.startActivity() // AMS ActivityManagerService Android 系统框架核心服务之 一，负责管理应用程序的生命周期，任务栈调度以及系统资源分配。
 │
 ├── AMS 请求Zygote 创建新进程
-│   └── Zygote fork() 子进程
-│       └── execve() 启动 app_process
+│   └── Zygote fork() 子进程(Zygote 本身就是由 app_process 进程启动的，它已经把 ART 虚拟机、Java 运行时库、常用系统类（如 ActivityThread）都预加载到内存里了,子进程直接复制内存镜像)
+│       └── 子进程直接执行 ActivityThread.main()
 │
 ├── 如果有壳,加载壳DEX DEX文件被设置为APK的主DEX,系统加载优先执行
 │   └── 解密壳DEX 
@@ -47,3 +50,10 @@
 │   
 └── 渲染UI
 
+
+通常logcat error触发的位置,“崩溃发生的位置”与“壳代码执行位置”之间的时间差：
+  1.系统解析 AndroidManifest.xml（读取 appComponentFactory 属性）
+  2.系统创建 LoadedApk 对象（此时需要立即实例化 CoreComponentFactory） <-- 你的崩溃就发生在这里,发生在 Zygote 子进程刚孵化、连 ActivityThread.main() 都还没执行完的时刻。
+  3.（中间的漫长流程）
+  4.系统调用 Application.attachBaseContext() <-- 你的加固壳通常在这里才开始解密 DEX
+  5.系统调用 Application.onCreate()
