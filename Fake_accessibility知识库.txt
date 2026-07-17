@@ -5,3 +5,6 @@
 Fake AccessibilityService:
 
   https://www.123912.com/s/cmLSVv-CpLLH
+
+模拟输入的方式：
+adb shell input text "Hello"
