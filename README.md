@@ -127,5 +127,3 @@ Closes #3597
 
 *本规范参考 [Conventional Commits](https://www.conventionalcommits.org/)，并结合实际项目示例定制。*
 ```
-
----
