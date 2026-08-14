@@ -1,0 +1,74 @@
+//author：Rose0882
+//time: 2026-08-14 16:24:23.041039
+
+📄 Android APP 漏洞之战（7）—— 信息泄露漏洞详解
+│
+├── 一、前言
+│   └── 目的：介绍 Android APP 信息泄露漏洞的基础知识与实例
+│
+├── 二、基础知识（数据存储方式）
+│   ├── 1. 文件存储
+│   │   ├── 内部存储 (/data/data/包名/)
+│   │   │   ├── share_prefs、cache、databases、files
+│   │   │   └── 特点：仅本应用可访问，卸载清除，需 root 可见
+│   │   ├── 外部存储 (/storage/emulated/0/Android/data/包名/)
+│   │   │   ├── 私有目录（自动删除，无需权限）
+│   │   │   └── 公共目录（需权限，不随卸载删除）
+│   │   ├── 系统存储目录 (/system, /data, /cache)
+│   │   └── 读写方式（FileOutputStream / FileInputStream）
+│   ├── 2. SharedPreferences
+│   │   ├── 存储路径：/data/data/包名/shared_prefs/
+│   │   ├── 获取方式：getSharedPreferences() / getPreferences() / getDefaultSharedPreferences()
+│   │   ├── 存取方法：edit() + putXxx() + apply/commit，getXxx()
+│   │   └── 风险：明文存储，模式不当可被其他应用读写
+│   ├── 3. SQLite 数据库存储
+│   │   ├── 存储路径：/data/data/包名/databases/
+│   │   ├── 使用 SQLiteOpenHelper 创建/升级
+│   │   ├── 基本操作：insert/update/delete/query，支持事务
+│   │   └── 风险：明文存储，模式不当可被其他应用访问
+│   ├── 4. ContentProvider
+│   │   └── 用于跨应用数据共享（已有专门章节，本文略）
+│   └── 5. 网络存储
+│       └── HTTP/WebService 交互，需 INTERNET 权限（本文略）
+│
+├── 三、信息泄露漏洞的安全场景和分类
+│   ├── 1. 敏感信息分类
+│   │   ├── 产品敏感信息（后台地址、IP、拓扑等）
+│   │   └── 用户敏感信息（账号、密码、银行卡等）
+│   └── 2. 漏洞分类（树状）
+│       ├── LogCat 输出敏感信息
+│       ├── 硬编码问题（Java层 / So层）
+│       ├── SharedPreferences 全局可读写
+│       ├── 数据库存储漏洞
+│       ├── 临时文件 / SD卡漏洞
+│       └── HTTP 明文传输漏洞
+│
+├── 四、漏洞原理分析与复现（含案例）
+│   ├── 1. LogCat 输出敏感信息
+│   │   ├── 原理：调试日志未关闭，泄露输入信息
+│   │   ├── 案例：DIVA.apk 例题1（输入内容被 log 输出）
+│   │   └── 防护：ProGuard 删除 Log / 自定义开关
+│   ├── 2. 硬编码问题
+│   │   ├── 原理：密钥/密码直接写在源码或 so 中
+│   │   ├── 案例1（Java层）：DIVA 例题2，直接比对硬编码字符串
+│   │   ├── 案例2（So层）：DIVA 例题12，key 存于 so 库，逆向可得
+│   │   └── 防护：加密存储、混淆（Java/So层）
+│   ├── 3. SharedPreferences 全局可读写
+│   │   ├── 原理：使用 MODE_WORLD_READABLE/WRITEABLE，或未限制权限
+│   │   ├── 案例：DIVA 例题3，存账号密码于 shared_prefs，可被其他应用读取
+│   │   └── 防护：使用 MODE_PRIVATE，避免存敏感信息，慎用 sharedUserId
+│   ├── 4. 数据库存储漏洞
+│   │   ├── 原理：数据库模式不当（WORLD_READABLE）或明文存敏感信息
+│   │   ├── 案例：DIVA 例题4，存密码于数据库，可导出查看
+│   │   └── 防护：加密存储，禁止使用全局可读模式
+│   ├── 5. 临时文件 / SD卡漏洞
+│   │   ├── 原理：将敏感信息存于外部存储（SD卡），任意应用可读
+│   │   ├── 案例：DIVA 例题5（内部私有文件）和例题6（SD卡文件）
+│   │   └── 防护：避免存敏感信息于外部存储，代码混淆
+│   └── 6. HTTP 明文传输漏洞
+│       ├── 原理：敏感数据（登录Cookie、VIP资源）用 HTTP 明文传输
+│       ├── 案例：某音乐APP VIP歌曲下载URL明文泄露，直接下载
+│       └── 防护：使用 HTTPS，对敏感字段加密
+│
+└── 五、实验总结
+    └── 信息泄露漏洞常见形式多样，实际需结合具体场景深挖
