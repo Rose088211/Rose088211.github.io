@@ -129,3 +129,32 @@ SO 安全性保护（防逆向/静态分析）—— 自检步骤
 					   - 如果 -O2 版本中平坦化结构被简化（如 switch 分支减少），则说明高优化破坏了混淆。
 					3. 建议：生产环境使用混淆器推荐的优化级别（通常 -O1 或 -O0），不要盲目追求 -O2/-O3。
 
+
+机器语言预览
+.text:00000000000B3A2C   STP  X29, X30, [SP, #-0x30]!   ; 1. 栈指针 SP 先减 48 字节，然后将 X29(帧指针) 存入 [SP+0]，X30(返回地址) 存入 [SP+8]
+.text:00000000000B3A30   STR  X21, [SP, #0x10]          ; 2. 将 X21 寄存器的值存入 [SP+16]（保存调用者现场的 X21）
+.text:00000000000B3A34   STP  X20, X19, [SP, #0x20]     ; 3. 将 X20 存入 [SP+32]，X19 存入 [SP+40]（保存调用者现场的 X20 和 X19）
+.text:00000000000B3A38   MOV  X29, SP                  ; 4. 将当前 SP 的值赋给 X29，建立当前函数的新栈帧
+.text:00000000000B3A3C   LDR  X8, [X0]                 ; 5. X0 是 JNIEnv*，从 X0 指向的内存地址读取 8 字节数据存入 X8（即取出 JNIEnv 结构体的虚函数表指针）
+.text:00000000000B3A40   MOV  X20, X2                 ; 6. 将 X2（Java 传入的第 3 个参数，通常是一个 jstring 或 jbyteArray）暂存到 X20，稍后可能再用
+.text:00000000000B3A44   MOV  X1, X2                  ; 7. 将 X2 复制给 X1，作为即将调用的 JNI 函数的第 2 个参数（X0 是 JNIEnv*，X1 是第一个业务参数）
+.text:00000000000B3A48   MOV  X2, XZR                 ; 8. 将 X2 清零（XZR 是零寄存器），作为即将调用的 JNI 函数的第 3 个参数（传入 NULL）
+.text:00000000000B3A4C   LDR  X8, [X8, #0xC0]          ; 9. 从虚函数表偏移 0xC0（即 192 字节）处读取一个函数指针存入 X8。在 Android JNIEnv 中，偏移 0xC0 对应的是 GetStringUTFChars 或 GetByteArrayElements 这类转换函数
+.text:00000000000B3A50   MOV  X19, X0                 ; 10. 将 X0（JNIEnv*）暂存到 X19，确保后续还能找到环境指针
+.text:00000000000B3A54   BLR  X8                      ; 11. 跳转到 X8 指向的地址（即 JNI 转换函数），同时将返回地址存入 X30（BLR 指令自带跳转和链接功能）
+.text:00000000000B3A58   TST  W0, #0xFF               ; 12. 测试 W0（即 X0 的低 32 位）的低 8 位是否为 0（实际上是检查 X0 是否为 NULL 或 0）
+.text:00000000000B3A5C   B.EQ  loc_B3A70              ; 13. 如果上一步测试结果为 0（即 W0 & 0xFF == 0），则跳转到地址 0xB3A70 执行其他逻辑
+.text:00000000000B3A60   LDP  X20, X19, [SP, #0x20]   ; 14. 从 [SP+32] 恢复 X20，从 [SP+40] 恢复 X19（与开头的 STP X20, X19 对应）
+.text:00000000000B3A64   LDR  X21, [SP, #0x10]        ; 15. 从 [SP+16] 恢复 X21（与开头的 STR X21 对应）
+.text:00000000000B3A68   LDP  X29, X30, [SP], #0x30   ; 16. 从 [SP] 恢复 X29，从 [SP+8] 恢复 X30，然后将 SP 加 48 字节（释放栈帧，注意最后的 ! 回写效果）
+.text:00000000000B3A6C   RET                           ; 17. 跳转到 X30 指向的地址（即返回调用者函数）
+
+这段机器语言的含义如
+// 假设 Java 方法为： native void oq9tO0(String str);
+JNIEXPORT void JNICALL Java_..._oq9tO0(JNIEnv* env, jobject thiz, jstring str) {
+    // 1. 保存现场（块1）
+    // 2. 调用 JNI 转换：const char* c_str = env->GetStringUTFChars(str, NULL); （块2 + 块3）
+    // 3. 如果 c_str 为 NULL，跳转去处理错误（块4）
+    // 4. 否则，恢复现场并返回（块5）
+    // 注：真正处理 c_str 的业务逻辑很可能在你没贴出来的后续代码中（大于 0xB3A70 的地方）
+}
