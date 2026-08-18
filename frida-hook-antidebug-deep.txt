@@ -1,0 +1,175 @@
+脱壳的本质
+
+├── 目标：从运行中的App内存里提取出完整的DEX字节码（不是源码）
+
+│   └── 注：DEX字节码 → 反编译 → 近似Java源码（但丢失注释、变量名等）
+
+├── 为什么DEX不完整？（三种典型原因）
+
+│   ├── ① 类加载级延迟解密：壳只在方法首次调用时才解密对应方法的字节码
+
+│   │   └── 如果你在调用前dump，得到的是空方法体（stub）
+
+│   ├── ② DEX分片存储：壳将原始DEX切成多个chunk，分散在不同内存区域
+
+│   │   └── 需要找到所有chunk并拼接（如360壳的VMP分段）
+
+│   └── ③ 自定义ClassLoader + 偏移混淆：壳用自己写的类加载器，DEX不在标准基址
+
+│       └── 普通dump脚本抓不到，需要动态追踪ClassLoader.loadClass过程
+
+└── 脱壳的通用步骤（简化）
+
+    ├── 静态分析壳的特征（加固厂商、壳版本）
+
+    ├── 动态定位DEX在内存中的起始地址和大小
+
+    ├── 选择合适的时机dump（通常在Application.attachBaseContext之后、所有类初始化之前）
+
+    └── 修复DEX（校验和、map offset等）
+
+
+
+DEX不完整的原因与对策
+
+├── 原因①：类加载级延迟解密
+
+│   ├── 现象：dump出的DEX中某些类的方法体为空（stub）
+
+│   └── 解决办法：
+
+│       ├── 方案A：主动触发所有类的加载（遍历ClassLoader的defineClass）
+
+│       ├── 方案B：在App启动后延迟一段时间再dump（等常用类被调用）
+
+│       └── 方案C：Hook ClassLoader.loadClass，在加载每个类时即时dump其方法
+
+├── 原因②：DEX分片存储
+
+│   ├── 现象：dump出的多个DEX片段，需要拼接
+
+│   └── 解决办法：
+
+│       ├── 方案A：通过内存搜索魔数（dex\n035\0）找到所有片段起始地址
+
+│       ├── 方案B：Hook ArtMethod::DexFile，追踪所有已注册的DEX文件
+
+│       └── 方案C：使用Frida的Process.enumerateModules()结合特征扫描
+
+└── 原因③：自定义ClassLoader + 偏移混淆
+
+    ├── 现象：标准dump脚本找不到DEX基址
+
+    └── 解决办法：
+
+        ├── 方案A：Hook Application.attachBaseContext，在此时定位DEX
+
+        ├── 方案B：跟踪libc的mmap/mprotect调用，捕获内存映射区域
+
+        └── 方案C：利用Frida Stalker跟踪DexFile::Open等内部函数
+
+
+
+绕过ptrace反调试的思考框架
+
+├── 思路1：欺骗TracerPid检查
+
+│   ├── 目标：让App读取/proc/self/status时看到TracerPid=0
+
+│   ├── 可Hook的点：
+
+│   │   ├── open() → 劫持文件打开，返回伪造内容
+
+│   │   ├── read() → 修改读取缓冲区
+
+│   │   └── fgets() / strstr() → 过滤关键字
+
+│   └── 思考：如果App用多种方式读取（直接读/proc、通过Java的FileReader），如何全面覆盖？
+
+├── 思路2：处理fork子进程互相监控
+
+│   ├── 目标：阻止子进程ptrace父进程，或让父进程误以为子进程还在正常运行
+
+│   ├── 关键系统调用：
+
+│   │   ├── fork() / clone() → 拦截返回值，修改PID
+
+│   │   ├── waitpid() → 修改状态标志
+
+│   │   └── ptrace(PTRACE_ATTACH) → 直接返回错误
+
+│   └── 思考：如果父子进程通过共享内存通信，只Hook系统调用够吗？
+
+└── 思路3：全局拦截所有ptrace调用
+
+    ├── 目标：无论App在何处调用ptrace，都返回假值
+
+    ├── 实现方式：
+
+    │   ├── Interceptor.attach(Module.findExportByName(null, "ptrace")) → 全局替换
+
+    │   └── 注意：某些壳可能直接内联syscall指令，绕过libc的ptrace符号
+
+    └── 思考：遇到内联syscall时，如何Hook？是否需要用Frida Stalker追踪？
+
+
+
+假设有一个 App 做了以下三层反调试：
+
+1. **ptrace(PTRACE_TRACEME)**​ — 经典自跟踪
+2. **读取 /proc/self/status 中的 TracerPid**​ — 检查是否有调试器附加
+3. **内联 syscall（直接调用 SVC #0，绕过 libc 的 ptrace 符号）**​ — 防止被 Interceptor.attach 拦截
+
+
+
+为什么 Interceptor.attach("ptrace") 对内联 syscall 无效？
+
+App 调用 ptrace 有两种方式：
+
+├── 方式A：调用 [libc.so](http://libc.so) 导出的 ptrace() 函数
+
+│   └── Frida 可以 Hook：Interceptor.attach(Module.findExportByName("[libc.so](http://libc.so)", "ptrace"), ...)
+
+│   └── ✅ 可行
+
+└── 方式B：内联 syscall（直接在代码中嵌入 SVC #0 指令）
+
+    ├── 不经过 libc，直接发起系统调用
+
+    ├── Frida 在用户态只能 Hook 函数符号，无法拦截指令级别的 SVC
+
+    └── ❌ 常规 Interceptor.attach 无效
+
+核心矛盾：Frida 的用户态 Hook 机制依赖于函数的入口地址（符号或偏移）。而内联 syscall 没有函数调用，是一条独立的汇编指令，不存在“入口”可以 attach。
+
+
+
+**Stalker 路线**：写一个 Frida 脚本，用 Stalker 追踪目标 App 的一个关键线程，找到并修改 `SVC #0` 指令的执行结果。
+
+**内核模块路线**：写一个 KernelSU/Magisk 模块，Hook `sys_ptrace`，对指定进程返回 0。
+
+
+
+**Stalker 路线**（need check ）
+
+├── 1. 定位目标 so 的基地址和大小
+
+│   └── Process.getModuleByName("[libxxx.so](http://libxxx.so)")
+
+├── 2. 在目标 so 范围内用 Stalker 做选择性跟踪
+
+│   └── 只对包含 svc 的 code block 启用 transform（开销降至 3% 以内）[3](@ref)
+
+├── 3. transform 回调里逐指令检查
+
+│   ├── 检查 mnemonic === 'svc'
+
+│   ├── 在 svc 前用 putCallout 读取 context.x8
+
+│   ├── 若 x8 === SYS_ptrace（117）→ 修改 context.x0 = 0
+
+│   └── 若该 so 用"内联 svc + syscall"模式（x8 === 0），需要进一步检查 x0 是否为 SYS_ptrace
+
+├── 4. 全线程：用 Process.attachThreadObserver 同步跟踪新线程
+
+└── 5. 命中 N 次后 observer.detach() + 全线程 Stalker.unfollow()
