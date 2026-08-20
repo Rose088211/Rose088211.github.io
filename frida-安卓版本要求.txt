@@ -19,3 +19,14 @@ frida>=17.9.0 eBPF程序暂停目标程序决定是否注入运行在内核态�
 
 spawn → attach → create_script → load → resume
 这个毫秒级速度远快于 AMS（ActivityManagerService）启动超时的 10 秒限制，完美地避开了 Android 系统的启动看门狗（Watchdog）。
+
+
+Frida 17.x 的重大架构变更
+1. 不再内置 Java 桥接 (frida-java-bridge)
+2. Android 16 对 ART（Android Runtime）内部进行了修改。这导致 Frida 的 Java 桥接需要更新适配才能正常工作。
+
+解决方案一：让python脚本兼容 Frida 17 + Android 16
+pip install frida-legacy-compat
+frida_legacy_compat.patch_frida()
+
+方案二：frida-agent-example
