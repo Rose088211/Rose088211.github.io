@@ -159,4 +159,3 @@ GitHub 账号已开启以下两项设置（Settings → Emails），作为最后
 ---
 
 *本规范参考 [Conventional Commits](https://www.conventionalcommits.org/)，并结合实际项目示例定制。*
-```
