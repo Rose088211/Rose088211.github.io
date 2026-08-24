@@ -125,4 +125,38 @@ Closes #3597
 
 ---
 
+## 提交身份与隐私配置（本项目已执行）
+
+除提交信息格式外，本项目对**提交身份**有以下硬性要求：
+
+### 本地 Git 身份
+
+本仓库的 git 身份固定为 noreply 地址（仓库级配置，不影响机器上的其他仓库）：
+
+```bash
+git config user.name "Rose088211"
+git config user.email "88967498+Rose088211@users.noreply.github.com"
+```
+
+所有提交的 **Author 和 Committer 都必须是上述身份**，禁止使用真实姓名、公司邮箱或 git 按主机名自动推断的身份。
+
+### GitHub 隐私保险
+
+GitHub 账号已开启以下两项设置（Settings → Emails），作为最后一道防线：
+
+| 设置 | 作用 |
+| :--- | :--- |
+| Keep my email addresses private | 网页端操作产生的提交一律使用 noreply 邮箱，隐藏真实邮箱 |
+| Block command line pushes that expose my email | 推送的提交若含账号绑定的真实邮箱，直接拒收 |
+
+> 第二项需先勾选第一项后才会出现。
+
+### 贡献者署名
+
+- 按「原子性」规范拆分出的每个提交，其作者/提交者均为 `Rose088211 <88967498+Rose088211@users.noreply.github.com>`。
+- **不得将 Claude Code 或其他 AI 工具列为贡献者**：提交信息末尾不要附加 `Co-Authored-By:` 之类的 AI 署名尾注。
+
+---
+
 *本规范参考 [Conventional Commits](https://www.conventionalcommits.org/)，并结合实际项目示例定制。*
+```
