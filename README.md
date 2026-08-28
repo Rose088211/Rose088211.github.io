@@ -138,6 +138,12 @@ git config user.name "Rose088211"
 git config user.email "88967498+Rose088211@users.noreply.github.com"
 ```
 
+要一劳永逸，改全局配置（对所有仓库生效）：
+
+```bash
+git config --global user.name "Rose088211"
+git config --global user.email "88967498+Rose088211@users.noreply.github.com"
+```
 所有提交的 **Author 和 Committer 都必须是上述身份**，禁止使用真实姓名、公司邮箱或 git 按主机名自动推断的身份。
 
 ### GitHub 隐私保险
