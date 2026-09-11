@@ -78,6 +78,7 @@ oplus https://op-rom.lian86.top/
 Bilibili (B站)	www.bilibili.com	大量实操视频教程，直观易懂。
 XDA Developers	forum.xda-developers.com	官方的、极其详尽的刷机/内核编译图文教程。
 开阔云 https://www.kaikuoyun.com/
+Ivon的部落格 https://ivonblog.com/
 
 求助答疑
 社区名称	链接	备注
