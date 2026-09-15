@@ -1,5 +1,8 @@
+author：Rose088211
+time: 2026-09-15 09:24:08.359102
+
 ========================================
-WSL2 连接 ADB 设备完整步骤（修正顺序）
+WSL2 连接 ADB 设备完整步骤
 适用环境：Windows 10 + WSL2 Ubuntu 22.04
 示例设备：OPPO SM8350-MTP，BUSID 为 4-4
 ========================================
@@ -11,6 +14,7 @@ WSL2 连接 ADB 设备完整步骤（修正顺序）
 4. 数据线连接电脑
 
 二、Windows 端：安装 usbipd-win
+usbipd 是 USB/IP 协议的服务端守护进程，它允许将本地物理 USB 设备通过网络共享给其他机器（包括虚拟机）使用。
 以管理员身份打开 PowerShell，执行：
 winget install --interactive --exact dorssel.usbipd-win
 
