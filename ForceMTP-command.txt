@@ -32,3 +32,4 @@ settings get global adb_enabled （put 1）
   # 1
 getprop sys.usb.config
   # mtp,adb
+settings get secure mock_location
