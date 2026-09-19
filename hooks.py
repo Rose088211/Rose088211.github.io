@@ -72,11 +72,9 @@ def _title(path: Path) -> str:
 def _documents(docs_dir: Path):
     result = []
     for path in docs_dir.rglob("*"):
-        if not path.is_file() or path.suffix.lower() != ".md":
+        if not path.is_file() or path.suffix.lower() != ".txt":
             continue
         relative = path.relative_to(docs_dir)
-        if relative.as_posix() in {"index.md", "maps.md"}:
-            continue
         if "stylesheets" in relative.parts:
             continue
         category = relative.parts[0] if len(relative.parts) > 1 else "other"
@@ -86,7 +84,7 @@ def _documents(docs_dir: Path):
 
 def _known_paths(text: str, link_prefix: str) -> set[str]:
     known = set()
-    for match in re.findall(r"\]\(([^)#]+\.md)(?:#[^)]*)?\)", text):
+    for match in re.findall(r"\]\(([^)#]+\.txt)(?:#[^)]*)?\)", text):
         link = match.replace("\\", "/")
         if link_prefix == "docs/" and link.startswith("docs/"):
             link = link[5:]
@@ -97,14 +95,12 @@ def _known_paths(text: str, link_prefix: str) -> set[str]:
 def _basename_aliases(docs_dir: Path, known: set[str]) -> dict[str, str]:
     """Map stale manual links to a file's new location after it was moved."""
     by_name: dict[str, list[str]] = {}
-    for path in docs_dir.rglob("*.md"):
+    for path in docs_dir.rglob("*.txt"):
         relative = path.relative_to(docs_dir).as_posix()
-        if relative in {"index.md", "maps.md"}:
-            continue
         by_name.setdefault(Path(relative).name, []).append(relative)
     aliases = {}
     for link in known:
-        if link in {"index.md", "maps.md"} or (docs_dir / link).exists():
+        if (docs_dir / link).exists():
             continue
         candidates = by_name.get(Path(link).name, [])
         if len(candidates) == 1:
@@ -147,6 +143,11 @@ def _link(value: str):
     if not match:
         return None
     return match.group(1).strip(), match.group(2).strip()
+
+
+def _page_link(location: str, link_prefix: str) -> str:
+    normalized = location[5:] if link_prefix == "docs/" and location.startswith("docs/") else location
+    return f"{link_prefix}{Path(normalized).with_suffix('.md').as_posix()}"
 
 
 def _parse_manual(text: str, link_prefix: str):
@@ -201,7 +202,7 @@ def _render_manual(text: str, link_prefix: str) -> str:
         lines.extend(["", f"## {section}", "", "| 目标 | 用途 | 文件位置 | 说明 |", "| --- | --- | --- | --- |"])
         for entry in section_entries:
             lines.append(
-                f"| {entry['target']} | {entry['purpose']} | [{entry['location']}]({entry['location']}) | {entry['description']} |"
+                f"| {entry['target']} | {entry['purpose']} | [{entry['location']}]({_page_link(entry['location'], link_prefix)}) | {entry['description']} |"
             )
     return "\n".join(lines).rstrip() + "\n"
 
@@ -221,7 +222,7 @@ def _section(docs_dir: Path, link_prefix: str = "", known_paths: set[str] | None
         AUTO_START,
         "## 自动发现的文档",
         "",
-        "> 本区块由 MkDocs 构建时自动生成。将 Markdown 文件放入 `docs/` 后，重新构建或使用 `mkdocs serve` 即可同步。",
+        "> 本区块由 MkDocs 构建时自动生成。将 TXT 文件放入 `docs/` 后，重新构建或使用 `mkdocs serve` 即可同步。",
         "",
     ]
     categories = [*CATEGORY_ORDER, *sorted(set(grouped) - set(CATEGORY_ORDER))]
@@ -230,7 +231,7 @@ def _section(docs_dir: Path, link_prefix: str = "", known_paths: set[str] | None
             continue
         lines.extend([f"### {CATEGORY_NAMES.get(category, category.title())}", "", "| 目标 | 用途 | 文件位置 | 说明 |", "| --- | --- | --- | --- |"])
         for relative, title in grouped[category]:
-            link = f"{link_prefix}{relative.as_posix()}"
+            link = f"{link_prefix}{relative.with_suffix('.md').as_posix()}"
             purpose = _purpose(relative.as_posix(), category)
             lines.append(f"| {title} | {purpose} | [{link}]({link}) | 自动发现 |")
         lines.append("")

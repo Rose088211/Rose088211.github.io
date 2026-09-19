@@ -290,6 +290,24 @@ body {
   white-space: pre;
 }
 
+.plain-text {
+  max-width: 100%;
+  margin: 1.25rem 0 2rem;
+  padding: 1.3rem 1.45rem;
+  overflow-x: auto;
+  border: 1px solid var(--kb-border);
+  border-radius: 0.8rem;
+  background: var(--md-code-bg-color);
+  box-shadow: var(--kb-shadow);
+  color: var(--md-code-fg-color);
+  font-family: var(--md-code-font-family);
+  font-size: 0.82rem;
+  line-height: 1.75;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
 .md-footer {
   border-top: 1px solid var(--kb-border);
 }

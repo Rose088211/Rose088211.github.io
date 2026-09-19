@@ -41,6 +41,9 @@ theme:
         name: 切换到浅色模式
 
 plugins:
+  - gen-files:
+      scripts:
+        - scripts/gen_txt_pages.py
   - search:
       lang:
         - zh
