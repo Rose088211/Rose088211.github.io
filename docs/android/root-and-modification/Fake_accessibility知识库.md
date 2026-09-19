@@ -1,0 +1,13 @@
+<div class="legacy-note">
+<pre>//device: android
+//time: 2026-04-28 11:55:49.406448
+
+
+Fake AccessibilityService:
+
+  https://www.123912.com/s/cmLSVv-CpLLH
+
+模拟输入的方式：
+adb shell input text &quot;Hello&quot;
+</pre>
+</div>

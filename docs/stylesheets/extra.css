@@ -1,0 +1,311 @@
+/* Modern documentation theme: clean, compact, and content-first. */
+:root {
+  --kb-header: #0b1220;
+  --kb-header-2: #172554;
+  --kb-accent: #2563eb;
+  --kb-accent-soft: rgba(37, 99, 235, 0.1);
+  --kb-border: #e2e8f0;
+  --kb-sidebar: #f8fafc;
+  --kb-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
+}
+
+[data-md-color-scheme="slate"] {
+  --kb-header: #070b14;
+  --kb-header-2: #111827;
+  --kb-accent-soft: rgba(96, 165, 250, 0.13);
+  --kb-border: #263244;
+  --kb-sidebar: #0f172a;
+  --kb-shadow: 0 14px 36px rgba(0, 0, 0, 0.22);
+  --md-default-bg-color: #0b1120;
+  --md-default-fg-color: #e5e7eb;
+  --md-code-bg-color: #111827;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--md-default-bg-color);
+}
+
+.md-header {
+  background: linear-gradient(115deg, var(--kb-header), var(--kb-header-2));
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.08), 0 8px 24px rgba(15, 23, 42, 0.16);
+}
+
+.md-header__title {
+  margin-left: 0.2rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.md-header__button.md-logo {
+  display: none;
+}
+
+.md-search__form {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 0.65rem;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.md-search__input {
+  color: white;
+}
+
+.md-sidebar {
+  background: var(--kb-sidebar);
+}
+
+.md-sidebar--primary {
+  border-right: 1px solid var(--kb-border);
+}
+
+.md-sidebar__scrollwrap {
+  scrollbar-color: rgba(100, 116, 139, 0.4) transparent;
+}
+
+.md-nav__title {
+  color: var(--md-default-fg-color);
+  font-weight: 750;
+}
+
+.md-nav__link {
+  margin: 0.12rem 0.55rem;
+  padding: 0.52rem 0.75rem;
+  border-radius: 0.55rem;
+  color: var(--md-default-fg-color--light);
+  transition: color 150ms ease, background 150ms ease, transform 150ms ease;
+}
+
+.md-nav__link:hover {
+  color: var(--kb-accent);
+  background: var(--kb-accent-soft);
+  transform: translateX(2px);
+}
+
+.md-nav__link--active {
+  color: var(--kb-accent) !important;
+  font-weight: 700;
+  background: var(--kb-accent-soft);
+}
+
+.md-main__inner {
+  max-width: 1440px;
+  margin-top: 1.5rem;
+}
+
+.md-content {
+  min-width: 0;
+}
+
+.md-content__inner {
+  max-width: 920px;
+  padding-bottom: 4rem;
+}
+
+/* The secondary navigation is a reading aid, not a second full sidebar. */
+.md-sidebar--secondary {
+  border-left: 1px solid var(--kb-border);
+}
+
+.md-sidebar--secondary .md-sidebar__scrollwrap {
+  padding: 1rem 0.35rem;
+}
+
+.md-sidebar--secondary .md-nav__title {
+  margin: 0 0 0.55rem;
+  padding: 0 0.7rem;
+  color: var(--md-default-fg-color--light);
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.md-sidebar--secondary .md-nav__link {
+  margin: 0.08rem 0;
+  padding: 0.42rem 0.7rem;
+  border-left: 2px solid transparent;
+  border-radius: 0 0.45rem 0.45rem 0;
+  font-size: 0.76rem;
+  line-height: 1.45;
+}
+
+.md-sidebar--secondary .md-nav__link:hover {
+  transform: none;
+}
+
+.md-sidebar--secondary .md-nav__link--active {
+  border-left-color: var(--kb-accent);
+}
+
+.md-typeset {
+  font-size: 0.88rem;
+  line-height: 1.8;
+}
+
+.md-typeset h1,
+.md-typeset h2,
+.md-typeset h3 {
+  color: var(--md-default-fg-color);
+  font-weight: 780;
+  letter-spacing: -0.025em;
+}
+
+.md-typeset h1 {
+  margin-bottom: 1.35rem;
+  font-size: 2.15rem;
+}
+
+.md-typeset h2 {
+  margin-top: 2.4rem;
+  padding-bottom: 0.45rem;
+  border-bottom: 1px solid var(--kb-border);
+  font-size: 1.45rem;
+}
+
+.md-typeset a {
+  color: var(--kb-accent);
+  font-weight: 600;
+}
+
+.md-typeset a:hover {
+  text-decoration: underline;
+}
+
+.md-typeset table {
+  border: 1px solid var(--kb-border);
+  border-radius: 0.75rem;
+  overflow: hidden;
+  box-shadow: var(--kb-shadow);
+}
+
+.md-typeset table th {
+  background: var(--kb-accent-soft);
+  color: var(--md-default-fg-color);
+  font-weight: 750;
+}
+
+.md-typeset table td,
+.md-typeset table th {
+  border-color: var(--kb-border);
+}
+
+.md-typeset blockquote {
+  margin: 1.35rem 0;
+  padding: 0.9rem 1.15rem;
+  border: 0;
+  border-left: 0.28rem solid var(--kb-accent);
+  border-radius: 0.65rem;
+  color: var(--md-default-fg-color);
+  background: var(--kb-accent-soft);
+  box-shadow: none;
+}
+
+.md-typeset blockquote p {
+  margin: 0;
+}
+
+.md-typeset blockquote p + p {
+  margin-top: 0.65rem;
+}
+
+/* Focused layout for the learning-coach page. */
+.learning-coach-page {
+  max-width: 800px;
+}
+
+.learning-coach-lead {
+  margin: 0 0 2.15rem;
+  padding: 1.05rem 1.2rem;
+  border: 1px solid var(--kb-border);
+  border-left: 0.28rem solid var(--kb-accent);
+  border-radius: 0.75rem;
+  background: linear-gradient(135deg, var(--kb-accent-soft), transparent 72%);
+  box-shadow: var(--kb-shadow);
+}
+
+.learning-coach-lead p {
+  margin: 0.35rem 0;
+}
+
+.learning-coach-page h2 {
+  scroll-margin-top: 4.5rem;
+}
+
+.learning-coach-page h3 {
+  margin-top: 1.7rem;
+  font-size: 1.05rem;
+}
+
+.learning-coach-page table {
+  display: table;
+  width: 100%;
+  margin: 1.1rem 0 1.8rem;
+  box-shadow: none;
+}
+
+.learning-coach-page li + li {
+  margin-top: 0.35rem;
+}
+
+.learning-coach-page blockquote {
+  margin-top: 1.2rem;
+  background: var(--kb-accent-soft);
+}
+
+.md-typeset .admonition {
+  border-radius: 0.75rem;
+  box-shadow: var(--kb-shadow);
+}
+
+.md-typeset code {
+  border: 1px solid var(--kb-border);
+  border-radius: 0.35rem;
+}
+
+.md-typeset pre {
+  border: 1px solid var(--kb-border);
+  border-radius: 0.8rem;
+  box-shadow: var(--kb-shadow);
+}
+
+.legacy-note {
+  margin: 1.25rem 0 2rem;
+  overflow-x: auto;
+  border: 1px solid var(--kb-border);
+  border-radius: 0.8rem;
+  background: var(--md-code-bg-color);
+  box-shadow: var(--kb-shadow);
+}
+
+.legacy-note pre {
+  margin: 0;
+  padding: 1.3rem 1.45rem;
+  color: var(--md-code-fg-color);
+  font-family: var(--md-code-font-family);
+  font-size: 0.82rem;
+  line-height: 1.75;
+  white-space: pre;
+}
+
+.md-footer {
+  border-top: 1px solid var(--kb-border);
+}
+
+@media screen and (max-width: 76.1875em) {
+  .md-sidebar--primary {
+    background: var(--kb-sidebar);
+  }
+}
+
+@media screen and (max-width: 600px) {
+  .md-content__inner {
+    padding-inline: 1rem;
+  }
+
+  .md-typeset h1 {
+    font-size: 1.8rem;
+  }
+}

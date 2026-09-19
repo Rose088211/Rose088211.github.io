@@ -1,0 +1,209 @@
+<div class="legacy-note">
+<pre>1. 启动frida服务端后，约7秒应用进程crash  ---&gt; D-BUS（通信协议握手特征） 
+绕过方式：
+hook返回值函数
+网络层检测则需要更换frida版本
+
+2.反调试技术
+Android ptrace 反调试技术（完整分类 + 双进程守护澄清）
+│
+├─ 【前置澄清】双进程守护 与 ptrace 反调试 的关系
+│   ├─ 纯双进程守护（保活）：不使用 ptrace，仅通过管道/socket互相监控、拉起
+│   │   └─ 箭头：子进程 ⇄ 父进程（无 ptrace attach）
+│   ├─ ptrace 反调试中的“子进程附加父进程”：使用 ptrace 占坑，防止外部调试器附加
+│   │   └─ 箭头：子进程 → 父进程（PTRACE_ATTACH）
+│   └─ 常见组合：两者同时使用（既占坑又保活），但原理不同，需分开理解
+│
+├─ 一、主动占坑型（直接调用 ptrace 系统调用）
+│   │
+│   ├─ 1. 自附加（PTRACE_TRACEME）
+│   │   ├─ 箭头标识：自身 → 父进程（zygote）
+│   │   ├─ 原理：进程启动时调用 ptrace(PTRACE_TRACEME)，内核标记该进程为“被追踪”状态，
+│   │   │        父进程（zygote）成为理论上的 tracer，但 zygote 不会真正调试它。
+│   │   │        效果：该进程的 ptrace 槽位被占用，任何外部调试器调用 PTRACE_ATTACH 都会失败（EBUSY）。
+│   │   ├─ 典型代码：
+│   │   │   #ifdef ANTI_DEBUG
+│   │   │       ptrace(PTRACE_TRACEME, 0, 0, 0);
+│   │   │   #endif
+│   │   ├─ 检测方法（反反调试视角）：
+│   │   │   └─ 尝试 ptrace(PTRACE_ATTACH, pid) -&gt; 若返回 -1 且 errno=EBUSY，说明目标进程已占坑。
+│   │   └─ 绕过方法：
+│   │       ├─ (A) spawn 模式：让调试器先于 App 启动，调试器 attach 新进程时，内核会拒绝 App 自身的 TRACEME
+│   │       └─ (B) Hook ptrace：拦截 TRACEME 请求，直接返回 0（假装成功），实际不执行内核调用。
+│   │
+│   └─ 2. 子进程附加父进程（子 → 父 PTRACE_ATTACH）
+│       ├─ 箭头标识：子进程 → 父进程
+│       ├─ 原理：主进程 fork 一个子进程，子进程调用 ptrace(PTRACE_ATTACH, 主进程PID)，
+│       │        使主进程的 ptrace 槽位被子进程占住。外部调试器无法再附加主进程。
+│       ├─ 典型代码：
+│       │   void anti_ptrace() {
+│       │       if (fork() == 0) {
+│       │           ptrace(PTRACE_ATTACH, getppid(), 0, 0);
+│       │           waitpid(getppid(), NULL, 0);
+│       │           while (1) sleep(1);
+│       │       }
+│       │   }
+│       ├─ 注意：子进程需保持运行，否则父进程的 ptrace 槽位会释放。
+│       └─ 绕过方法：
+│           ├─ 方法1：同时调试父进程和子进程（frida monitor fork() 脚本） ---frida child gadting影响应用ui加载流程，卡在应用启动页!
+│           ├─ 方法2：杀死子进程后快速附加父进程（有竞争窗口）
+│           └─ 方法3：Hook ptrace，使子进程的 ATTACH 失败（如返回 EPERM）
+│
+├─ 二、被动检测型（不主动占坑，而是检查自己被调试的痕迹）
+│   │
+│   ├─ 3. TracerPid 检测（最经典）
+│   │   ├─ 箭头标识：进程 → /proc/self/status
+│   │   ├─ 原理：Linux 内核会在 /proc/pid/status 中记录附加进程的 pid（TracerPid）。
+│   │   │        若未被调试则为 0；被 ptrace 附加后变成调试器的 pid。
+│   │   ├─ 典型代码：
+│   │   │   char line[256];
+│   │   │   FILE *f = fopen(&quot;/proc/self/status&quot;, &quot;r&quot;);
+│   │   │   while (fgets(line, sizeof(line), f)) {
+│   │   │       if (strncmp(line, &quot;TracerPid:&quot;, 10) == 0) {
+│   │   │           int pid = atoi(line + 10);
+│   │   │           if (pid != 0) exit(1);  // 被调试，自杀
+│   │   │       }
+│   │   │   }
+│   │   ├─ 绕过方法：
+│   │   │   ├─ Hook open/read 系统调用：替换读取内容中的 &quot;TracerPid:\t1234&quot; 为 &quot;TracerPid:\t0&quot;
+│   │   │   ├─ 使用内核模块或 ptrace 自身来伪造文件内容（较复杂）
+│   │   │   └─ 静态二进制补丁：直接 nop 掉检测代码。
+│   │   └─ 特例：TracerPid 可能为 0 但进程仍处于 ptrace stop（罕见），需结合其他检测。
+│   │
+│   ├─ 4. 进程状态（stat）检测
+│   │   ├─ 箭头标识：进程 → /proc/self/stat
+│   │   ├─ 原理：/proc/self/stat 的第 3 字段是进程状态字母。正常运行是 &#39;R&#39; 或 &#39;S&#39;，
+│   │   │        当被 ptrace 附加并停止时（如碰到断点），状态变为 &#39;t&#39;（tracing stop）。
+│   │   ├─ 典型代码：
+│   │   │   char stat[256];
+│   │   │   readlink(&quot;/proc/self/stat&quot;, stat, sizeof(stat));
+│   │   │   // 解析第三个字段，如果第一个字符是 &#39;t&#39; 则报警
+│   │   ├─ 绕过方法：
+│   │   │   ├─ Hook read 调用，将 &#39;t&#39; 改为 &#39;S&#39; 或 &#39;R&#39;
+│   │   │   └─ 调试时避免让进程长时间处于 t 状态（如使用非阻塞断点）
+│   │   └─ 注意：即使没有调试器，某些正常操作（如被 strace 跟踪）也会导致 &#39;t&#39;，所以需结合判断。
+│   │
+│   ├─ 5. wchan 检测
+│   │   ├─ 箭头标识：进程 → /proc/self/wchan
+│   │   ├─ 原理：wchan 显示进程当前等待的内核函数名称。当进程因 ptrace 停止时，
+│   │   │        wchan 通常为 &quot;ptrace_stop&quot;。
+│   │   ├─ 典型代码：
+│   │   │   char wchan[64];
+│   │   │   readlink(&quot;/proc/self/wchan&quot;, wchan, sizeof(wchan));
+│   │   │   if (strstr(wchan, &quot;ptrace_stop&quot;)) exit(1);
+│   │   ├─ 绕过方法：
+│   │   │   └─ Hook read/open，将 &quot;ptrace_stop&quot; 替换为其他字符串如 &quot;do_wait&quot; 或空。
+│   │   └─ 局限性：某些内核版本不会暴露 ptrace_stop，检测效果不稳定。
+│   │
+│   └─ 6. 系统调用时间差检测（针对单步调试或断点）
+│       ├─ 箭头标识：进程 → 自身系统调用
+│       ├─ 原理：调试器单步执行（PTRACE_SINGLESTEP）或软件断点（int3）会导致每条指令执行时间显著增加。
+│       │        通过两次高精度时间戳（如 clock_gettime）差值判断是否被单步。
+│       ├─ 典型代码：
+│       │   struct timespec ts1, ts2;
+│       │   clock_gettime(CLOCK_MONOTONIC, &amp;ts1);
+│       │   asm volatile(&quot;nop&quot;);  // 或其他短指令
+│       │   clock_gettime(CLOCK_MONOTONIC, &amp;ts2);
+│       │   if ((ts2.tv_nsec - ts1.tv_nsec) &gt; THRESHOLD) exit(1);
+│       ├─ 绕过方法：
+│       │   ├─ Hook clock_gettime，使差值始终小于阈值。
+│       │   ├─ 使用硬件断点（避免 int3）但时间差仍可能变化。
+│       │   └─ 将检测代码 nop 掉。
+│       └─ 注意：在重负载系统上可能误判，所以通常与其他检测配合使用。
+│
+└─ 三、衍生对抗型（利用 ptrace 特性组合，不一定是直接占坑）
+    │
+    ├─ 7. 双进程互相守护（保活 + 可选 ptrace）
+    │   ├─ 箭头标识：子进程 ⇄ 父进程（双向监控，可选子→父 ptrace）
+    │   ├─ 原理：两个进程互相监控对方是否存活，若一方异常退出，另一方杀死主 App 或重启。
+    │   │        如果结合 ptrace，则子进程同时 attach 父进程，既占坑又保活。
+    │   ├─ 典型代码（不含 ptrace 的纯保活）：
+    │   │   // 父进程
+    │   │   int pipes[2]; pipe(pipes);
+    │   │   if (fork() == 0) {
+    │   │       // 子进程：监控父进程，若父进程死亡则自杀
+    │   │       close(pipes[1]);
+    │   │       while(read(pipes[0], &amp;c, 1) &gt; 0);
+    │   │       kill(getppid(), SIGKILL);
+    │   │   } else {
+    │   │       // 父进程：若子进程死亡则退出
+    │   │       close(pipes[0]);
+    │   │       wait(NULL);
+    │   │       exit(1);
+    │   │   }
+    │   ├─ 绕过方法：
+    │   │   ├─ 同时 kill 两个进程（或暂停一个后再杀另一个）
+    │   │   ├─ Hook fork 返回值，使子进程逻辑失效
+    │   │   └─ 使用 ptrace 分别附加两个进程，控制执行流
+    │   └─ 错误纠正：纯双进程守护不是 ptrace 反调试，只有当它包含 ptrace_attach 时才属于。
+    │
+    ├─ 8. 反 ptrace 附加（拒绝调试器 attach）
+    │   ├─ 箭头标识：自身 → 任意进程（如 PID=1）
+    │   ├─ 原理：不断调用 ptrace(PTRACE_ATTACH, 无效PID) 或 特权PID（如1），虽然调用失败，
+    │   │        但内核在处理过程中会占用当前进程的 ptrace 相关资源，导致外部调试器的正常
+    │   │        attach 请求被拒绝（返回 EBUSY）。
+    │   ├─ 典型代码：
+    │   │   while (1) {
+    │   │       ptrace(PTRACE_ATTACH, 1, 0, 0);  // 附加 init 进程，一定失败 (EPERM)
+    │   │       usleep(100000);
+    │   │   }
+    │   ├─ 内核行为说明（需具体内核版本）：
+    │   │   └─ 部分内核版本在 ptrace 失败后仍会短暂标记进程为“ptrace 操作中”，导致后续 attach 阻塞。
+    │   ├─ 绕过方法：
+    │   │   ├─ Hook ptrace，直接返回 -1 且不执行真正内核调用（消除副作用）
+    │   │   ├─ 在调试器 attach 之前先暂停这些循环（如使用暂停信号）
+    │   │   └─ 修改内核参数（需要 root）
+    │   └─ 注意：该手法在某些高版本 Android 内核中可能无效，属于较古老技巧。
+    │
+    └─ 9. 反调试器特征检测（常与 ptrace 反调试共存，但严格说不属于 ptrace 系统调用）
+        ├─ 箭头标识：进程 → 内存 /proc/self/maps / 端口扫描
+        ├─ 原理：扫描进程内存映射（maps）或网络连接，识别调试器注入的 so（如 frida-agent.so）、
+        │        或者特定调试端口（IDA 端口 23946，frida-server 端口 27042）。
+        ├─ 典型代码：
+        │   FILE *f = fopen(&quot;/proc/self/maps&quot;, &quot;r&quot;);
+        │   while (fgets(line, sizeof(line), f)) {
+        │       if (strstr(line, &quot;frida-agent.so&quot;)) exit(1);
+        │   }
+        ├─ 绕过方法：
+        │   ├─ 对 open/read/fgets 进行 hook，过滤掉相关行。
+        │   ├─ 重命名 frida-agent.so（使用 frida 的 --runtime 参数可修改名称）
+        │   └─ 使用内核模块隐藏 maps 条目。
+        └─ 说明：该技术常被归入“反调试”大类，但与 ptrace 本身无直接系统调用关系。
+
+3. pc端hook注入进程，约2秒应用进程crash   
+---&gt; 
+跨进程检测：
+proc（Android5.1以上无效） 
+/proc/pid/maps（内存映射信息）  
+/proc/pid/task/tid/status（显示线程状态和内存统计）
+/proc/pid/fd/（进程当前打开的所有文件描述符-strongR or version&gt;=16-） 
+
+自身进程自检测：
+/proc/self/status(Traceid !=0)
+/proc/self/maps
+/proc/self/fd/
+/proc/self/task/[tid]/comm
+/proc/self/task/[tid]/status
+/proc/self/environ
+/proc/self/cmdline
+/proc/self/auxv
+/proc/self/mem
+
+端口扫描：
+/proc/net/tcp和/proc/net/tcp6（如果修改 Frida Server 的监听端口，那么就不会出现 :69a2）  
+
+已知文件执行：
+/data/local/tmp/frida-server(chmod 755 777)
+
+初始化信号比对：
+信号处理函数signal(setImmediate延迟执行)
+
+4.内存中函数前 N 个字节的CRC32比对---&gt;Hook libc.so​ 中的 memcmp​ 函数  
+
+
+
+以上检测方法皆是使用系统函数读取文件和进行检测 open、openat &amp;&amp; readlink​、readlinkat（描述符）；IO 重定向 方案是通解
+todo：
+检测类加载时立即hook其方法
+</pre>
+</div>

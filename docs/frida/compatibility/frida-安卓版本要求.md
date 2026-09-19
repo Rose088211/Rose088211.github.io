@@ -1,0 +1,35 @@
+<div class="legacy-note">
+<pre>//time: 2026-04-15 16:11:12.378624
+
+Android版本	推荐Frida版本	说明
+Android 7-8	Frida 12.8.0	低版本Android兼容性较好
+Android 10	Frida 14.x	基本支持
+Android 12​	**Frida 16.x+**​	必须使用16.0.0以上版本
+Android 13+	Frida 16.x+	需要较新版本
+为什么Android 12需要更高版本？
+ART运行时变化：Android 12的ART虚拟机内部结构发生变化，ArtMethod字段布局与之前版本不同
+内存访问限制：Android 12+引入了更严格的内存访问限制，低版本Frida无法正确处理
+安全机制增强：Android 12加强了运行时保护机制
+
+
+frida 枚举zygote/uasp主进程注入；
+大多数兼容32应用的64位手机无法使用fria &lt;= 17.6进行spawn注入
+frida Zygote + Symbiote（共生体）：
+可以孵化进程但是启动完成前卡住fria &gt;= 17.6, 已知frida 17.6.0存在bug无法正常启动，17.15.1已修复。
+frida&gt;=17.9.0 eBPF程序暂停目标程序决定是否注入运行在内核态，不需要ptrace附加目标进程，也不会在目标进程的/proc/pid/status中留下TracerPid痕迹，具有天然的反检测优势。
+
+spawn → attach → create_script → load → resume
+这个毫秒级速度远快于 AMS（ActivityManagerService）启动超时的 10 秒限制，完美地避开了 Android 系统的启动看门狗（Watchdog）。
+
+
+Frida 17.x 的重大架构变更
+1. 不再内置 Java 桥接 (frida-java-bridge)
+2. Android 16 对 ART（Android Runtime）内部进行了修改。这导致 Frida 的 Java 桥接需要更新适配才能正常工作。
+
+解决方案一：让python脚本兼容 Frida 17 + Android 16
+pip install frida-legacy-compat
+frida_legacy_compat.patch_frida()
+
+方案二：frida-agent-example
+</pre>
+</div>

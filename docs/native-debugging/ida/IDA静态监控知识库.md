@@ -1,0 +1,163 @@
+<div class="legacy-note">
+<pre>//author: Rose0882
+//time: 2026-04-10 17:56:54.448618
+ida text view:所在段：虚拟地址  标签（类似函数名、变量）  指令  操作数（指令参数）  注释（交叉引用）
+			
+			查找strings Windows字符所在段 start：
+				按 Ctrl+S 打开段列表
+				找到包含该地址的段（地址在 Start 和 End 之间）
+				该行的 Start 列 = 基址，虚拟地址 - 该段start基址 = 该段start段内偏移
+				
+			查找 Functions Windows函数所在段：
+				按 Ctrl+S 打开段列表
+				代码在 .text 段，外部函数在 .plt 段。这能快速判断函数类型和大致行为。
+				lenth R
+			
+			用“段内偏移”对抗 ASLR（每次运行时随机基址重置）：
+				//TODO ::
+				//抢占先机，Hook 初始化函数
+				//精确拦截检测线程
+				// 1. 获取 so 基址
+				var base = Module.findBaseAddress(&quot;libtest.so&quot;);
+				if (base) {
+					// 2. 计算实际 Hook 地址
+					var targetAddr = base.add(0x1234);
+					console.log(&quot;[+] Hooking at:&quot;, targetAddr);
+					
+					// 3. 修改内存页属性（仅当目标函数在只读段时需要）
+					Memory.protect(targetAddr, 4, &#39;rwx&#39;);
+
+					// 4. 进行 Hook
+					Interceptor.attach(targetAddr, {
+						onEnter: function(args) { 
+							console.log(&quot;[+] Function entered. Args:&quot;, args[0]); 
+						},
+						onLeave: function(retval) { 
+							console.log(&quot;[+] Function left. Ret:&quot;, retval);
+						}
+					});
+				} else {
+					console.log(&quot;[-] libtest.so not found.&quot;);
+				}
+
+
+
+//time:2026-04-13 11:18:51.232884
+SO 安全性保护（防逆向/静态分析）
+			├── 代码混淆（专用工具 / OLLVM）
+			│   ├── 控制流混淆：平坦化、虚假控制流、间接跳转
+			│   ├── 指令混淆：等价指令替换、垃圾指令插入
+			│   └── 数据混淆：字符串加密、常量展开、变量别名
+			├── 符号信息消除
+			│   ├── 编译时：函数名重命名（混淆器）
+			│   ├── 链接时：-fvisibility=hidden，导出表最小化
+			│   └── 发布前：strip --strip-all（剥离符号表）
+			├── 元数据缩减
+			│   ├── 禁用 RTTI（-fno-rtti）
+			│   └── 禁用异常（-fno-exceptions）
+			└── 注意：编译优化级别（-O2/-O3）通常不作为安全措施，需评估与混淆的兼容性
+			
+SO 安全性保护（防逆向/静态分析）—— 自检步骤
+			│
+			├── 代码混淆（专用工具 / OLLVM）
+			│   ├── 控制流混淆：平坦化、虚假控制流、间接跳转
+			│   │   └── 自检步骤（IDA）：
+			│   │       1. 用 IDA 打开 SO，选择一个关键函数（如 JNI_OnLoad 或导出函数）。
+			│   │       2. 按 F5 反编译，观察伪代码：
+			│   │          - 平坦化：看到大量 while(1) / switch(dispatch_var) 结构，基本块被拆分为多个 case。
+			│   │          - 虚假控制流：存在永远不会到达或条件恒真/恒假的分支（如 if(1==2)）。
+			│   │       3. 按空格键切换到图形视图（Graph view），查看控制流图：
+			│   │          - 平坦化后图形呈“星型”或“环型”，主分发块连接到多个小块。
+			│   │          - 间接跳转：出现 call/jmp 的目标地址来自寄存器或内存（如 call eax），IDA 可能无法静态解析。
+			│   │
+			│   ├── 指令混淆：等价指令替换、垃圾指令插入
+			│   │   └── 自检步骤（IDA）：
+			│   │       1. 打开 IDA 的反汇编窗口（IDA View-A），定位到任意函数。
+			│   │       2. 寻找明显冗余的指令模式：
+			│   │          - 垃圾指令：如连续的 `nop`，或 mov r0, r0；push/pop 不改变状态。
+			│   │          - 等价替换：原本简单的 `add r0, #1` 可能被替换为 `sub r0, #-1` 或 `mov r1, r0; add r0, #1; ...`。
+			│   │       3. 对比原始未混淆的 SO（如果有），观察指令密度和模式变化。
+			│   │
+			│   └── 数据混淆：字符串加密、常量展开、变量别名
+			│       └── 自检步骤（IDA + strings 命令）：
+			│           1. 命令行执行：`strings your.so | grep -i &quot;password\|key\|license&quot;`
+			│              - 若返回空或只有无意义密文，说明敏感字符串未明文暴露。
+			│           2. IDA 中查看 .rodata 段（Shift+F7 打开段列表，双击 .rodata）：
+			│              - 如果看到可读的英文/中文字符串，说明字符串未加密。
+			│           3. 在 IDA 反汇编窗口搜索已知常量（如 0x12345678）：
+			│              - 混淆后常量可能被拆分为多个子表达式（常量展开），或者直接改为运行时计算。
+			│           4. 变量别名：观察伪代码中同一逻辑使用了多个不同变量名，难以直接推断原始语义。
+			│
+			├── 符号信息消除
+			│   ├── 编译时：函数名重命名（混淆器）
+			│   │   └── 自检步骤（IDA）：
+			│   │       1. 打开 IDA，查看左侧 Functions 窗口（或按 Ctrl+F 打开函数列表）。
+			│   │       2. 观察函数名：
+			│   │          - 若全部为 `sub_XXXX`、`loc_XXXX` 或随机字符串（如 `a1b2c3`），说明已完成重命名。
+			│   │          - 若出现 `JNI_OnLoad`、`Java_*`、`check_license` 等语义名称，则未混淆。
+			│   │
+			│   ├── 链接时：-fvisibility=hidden，导出表最小化
+			│   │   └── 自检步骤（命令行 readelf）：
+			│   │       1. 执行：`readelf -s --wide your.so | grep &quot;GLOBAL&quot; | grep &quot;FUNC&quot;`
+			│   │          - 观察输出的函数符号。正常只应保留 JNI 接口（如 `Java_*`）和少量必须导出的函数。
+			│   │       2. 执行：`readelf -d your.so | grep &quot;SONAME&quot;` 查看 SO 名称。
+			│   │       3. 若导出表中存在大量内部函数（如 `_ZN...` 或 `check_license`），说明 visibility 未正确隐藏。
+			│   │
+			│   └── 发布前：strip --strip-all（剥离符号表）
+			│       └── 自检步骤（命令行 file / readelf）：
+			│           1. 执行：`file your.so`，输出中若包含 `stripped` 表示已 strip。
+			│           2. 执行：`readelf -S your.so | grep &quot;symtab&quot;`：
+			│              - 无输出（或 .symtab 段缺失）说明符号表已剥离。
+			│           3. IDA 中加载时，若弹窗提示“The file is stripped”，且函数名均为 sub_XXXX，则 strip 生效。
+			│
+			├── 元数据缩减
+			│   ├── 禁用 RTTI（-fno-rtti）
+			│   │   └── 自检步骤（IDA + strings）：
+			│   │       1. 命令行：`strings your.so | grep -i &quot;typeinfo\|vtable\|RTTI&quot;`
+			│   │          - 若没有类似 `_ZTI...`（C++ typeinfo）字符串，则 RTTI 已禁用。
+			│   │       2. IDA 中按 `Shift+F7` 打开段列表，查看是否存在 `.rodata._ZTI` 或 `.data.rel.ro` 中的 vtable 字符串。
+			│   │
+			│   └── 禁用异常（-fno-exceptions）
+			│       └── 自检步骤（IDA）：
+			│           1. 用 IDA 打开 SO，搜索 `__gxx_personality_v0`（按 Alt+T 搜索立即数/字符串）。
+			│           2. 若找不到该符号（或相关 unwind 表），且反汇编中无 `_Unwind_Resume` 调用，则异常已禁用。
+			│           3. 也可检查 `.ARM.exidx` 段（ARM 架构）—— 若该段非常小或缺失，说明未启用异常处理。
+			│
+			└── 注意：编译优化级别（-O2/-O3）通常不作为安全措施，需评估与混淆的兼容性
+				└── 自检步骤（对比测试）：
+					1. 准备两个 SO：一个使用混淆器 + -O0，另一个使用混淆器 + -O2。
+					2. 用 IDA 对比关键函数的控制流图：
+					   - 如果 -O2 版本中平坦化结构被简化（如 switch 分支减少），则说明高优化破坏了混淆。
+					3. 建议：生产环境使用混淆器推荐的优化级别（通常 -O1 或 -O0），不要盲目追求 -O2/-O3。
+
+
+机器语言预览
+.text:00000000000B3A2C   STP  X29, X30, [SP, #-0x30]!   ; 1. 栈指针 SP 先减 48 字节，然后将 X29(帧指针) 存入 [SP+0]，X30(返回地址) 存入 [SP+8]
+.text:00000000000B3A30   STR  X21, [SP, #0x10]          ; 2. 将 X21 寄存器的值存入 [SP+16]（保存调用者现场的 X21）
+.text:00000000000B3A34   STP  X20, X19, [SP, #0x20]     ; 3. 将 X20 存入 [SP+32]，X19 存入 [SP+40]（保存调用者现场的 X20 和 X19）
+.text:00000000000B3A38   MOV  X29, SP                  ; 4. 将当前 SP 的值赋给 X29，建立当前函数的新栈帧
+.text:00000000000B3A3C   LDR  X8, [X0]                 ; 5. X0 是 JNIEnv*，从 X0 指向的内存地址读取 8 字节数据存入 X8（即取出 JNIEnv 结构体的虚函数表指针）
+.text:00000000000B3A40   MOV  X20, X2                 ; 6. 将 X2（Java 传入的第 3 个参数，通常是一个 jstring 或 jbyteArray）暂存到 X20，稍后可能再用
+.text:00000000000B3A44   MOV  X1, X2                  ; 7. 将 X2 复制给 X1，作为即将调用的 JNI 函数的第 2 个参数（X0 是 JNIEnv*，X1 是第一个业务参数）
+.text:00000000000B3A48   MOV  X2, XZR                 ; 8. 将 X2 清零（XZR 是零寄存器），作为即将调用的 JNI 函数的第 3 个参数（传入 NULL）
+.text:00000000000B3A4C   LDR  X8, [X8, #0xC0]          ; 9. 从虚函数表偏移 0xC0（即 192 字节）处读取一个函数指针存入 X8。在 Android JNIEnv 中，偏移 0xC0 对应的是 GetStringUTFChars 或 GetByteArrayElements 这类转换函数
+.text:00000000000B3A50   MOV  X19, X0                 ; 10. 将 X0（JNIEnv*）暂存到 X19，确保后续还能找到环境指针
+.text:00000000000B3A54   BLR  X8                      ; 11. 跳转到 X8 指向的地址（即 JNI 转换函数），同时将返回地址存入 X30（BLR 指令自带跳转和链接功能）
+.text:00000000000B3A58   TST  W0, #0xFF               ; 12. 测试 W0（即 X0 的低 32 位）的低 8 位是否为 0（实际上是检查 X0 是否为 NULL 或 0）
+.text:00000000000B3A5C   B.EQ  loc_B3A70              ; 13. 如果上一步测试结果为 0（即 W0 &amp; 0xFF == 0），则跳转到地址 0xB3A70 执行其他逻辑
+.text:00000000000B3A60   LDP  X20, X19, [SP, #0x20]   ; 14. 从 [SP+32] 恢复 X20，从 [SP+40] 恢复 X19（与开头的 STP X20, X19 对应）
+.text:00000000000B3A64   LDR  X21, [SP, #0x10]        ; 15. 从 [SP+16] 恢复 X21（与开头的 STR X21 对应）
+.text:00000000000B3A68   LDP  X29, X30, [SP], #0x30   ; 16. 从 [SP] 恢复 X29，从 [SP+8] 恢复 X30，然后将 SP 加 48 字节（释放栈帧，注意最后的 ! 回写效果）
+.text:00000000000B3A6C   RET                           ; 17. 跳转到 X30 指向的地址（即返回调用者函数）
+
+这段机器语言的含义如
+// 假设 Java 方法为： native void oq9tO0(String str);
+JNIEXPORT void JNICALL Java_..._oq9tO0(JNIEnv* env, jobject thiz, jstring str) {
+    // 1. 保存现场（块1）
+    // 2. 调用 JNI 转换：const char* c_str = env-&gt;GetStringUTFChars(str, NULL); （块2 + 块3）
+    // 3. 如果 c_str 为 NULL，跳转去处理错误（块4）
+    // 4. 否则，恢复现场并返回（块5）
+    // 注：真正处理 c_str 的业务逻辑很可能在你没贴出来的后续代码中（大于 0xB3A70 的地方）
+}
+</pre>
+</div>

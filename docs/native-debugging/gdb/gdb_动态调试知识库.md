@@ -1,0 +1,89 @@
+<div class="legacy-note">
+<pre>//author: Rose0882
+//time: 2026-05-29 10:42:54.031375
+
+动态分析 / 调试手段（攻击者视角）
+│
+├─ 1. 传统调试器（系统特征明显，Wultra 可检测）
+│  ├─ JAVA 调试器（基于 JDWP，如 jdb、Android Studio）
+│  └─ NATIVE 调试器（基于 ptrace，如 gdb、lldb）
+│
+└─ 2. 非传统动态分析（Wultra 无法检测）
+   │
+   ├─ 动态 Instrumentation 框架
+   │  ├─ Frida（最主流，Gadget + JS 注入）
+   │  ├─ Objection（基于 Frida 的移动端工具）
+   │  └─ 定制 frida-server / frida-gadget
+   │
+   ├─ Hook 框架（ART 层注入）
+   │  ├─ Xposed / LSPosed / EdXposed
+   │  ├─ VirtualXposed（免 Root 变种）
+   │  └─ TaiChi（太极）
+   │
+   ├─ 内存修改 / 游戏修改器
+   │  ├─ GameGuardian
+   │  ├─ Cheat Engine（Android 移植版）
+   │  └─ 自定义 memedit（通过 process_vm_writev）
+   │
+   ├─ 模拟器 / 虚拟化环境
+   │  ├─ 传统模拟器（BlueStacks, LDPlayer, Nox）
+   │  ├─ VMOS / VirtualApp / Sandbox（虚拟 Android 环境）
+   │  └─ 云真机托管环境（远程调试但无 ptrace 标志）
+   │
+   └─ 内核级 / 底层注入
+      ├─ Kernel module hook（如 Kprobe）
+      ├─ 自定义注入器（通过 ptrace 动态附加后再 detach，留下短暂痕迹）
+      └─ 硬件调试器（JTAG / SWD，仅物理攻击）
+
+====================================================================
+动态分析/调试手段（攻击者视角）
+│
+├── 1. 传统调试器
+│   │
+│   ├── 核心特征
+│   │   ├── 持续依赖系统标准调试接口
+│   │   │   ├── Native调试：长期占用 ptrace
+│   │   │   └── Java调试：依赖 JDWP 协议
+│   │   ├── 内核痕迹明显
+│   │   │   └── /proc/pid/status 中 TracerPid ≠ 0（持续）
+│   │   └── 调试进程独立存在（如 gdb, lldb-server）
+│   │
+│   └── 代表工具
+│       ├── gdb / lldb / gdbserver
+│       └── jdb / Android Studio Java调试器
+│
+└── 2. 非传统动态分析
+    │
+    ├── 分类依据（与传统调试器的核心区别）
+    │   ├── 不持续依赖 ptrace 或 JDWP
+    │   ├── TracerPid 通常为 0（无持续内核标志）
+    │   └── 代码运行在目标进程内部，无独立调试进程
+    │
+    ├── 2.1 完全不依赖 ptrace 的类型
+    │   ├── Hook 框架（ART层替换）
+    │   │   ├── Xposed / LSPosed
+    │   │   └── 太极（TaiChi）
+    │   ├── 内存直接修改
+    │   │   ├── GameGuardian（读 /proc/pid/mem）
+    │   │   └── Cheat Engine（process_vm_writev）
+    │   └── 模拟器 / 虚拟化环境
+    │       ├── BlueStacks, LDPlayer（传统模拟器）
+    │       └── VMOS, VirtualApp（虚拟Android环境）
+    │
+    └── 2.2 短暂使用 ptrace 后分离的类型（以 Frida 为代表）
+        │
+        ├── Frida 的工作流程
+        │   ├── 注入瞬间：使用 ptrace 附加目标进程
+        │   ├── 分配内存、写入 stub 代码、注入 frida-agent.so
+        │   └── 立即 ptrace_detach，后续通过管道/socket通信
+        │
+        ├── 为什么仍归为“非传统”
+        │   ├── 不持续占用 ptrace → TracerPid 在注入后归零
+        │   ├── 不依赖 ptrace 实现断点/单步（使用 inline hook）
+        │   └── 传统调试器检测（如检查 TracerPid）完全失效
+        │
+        └── 防御上的结论
+            ├── Frida 需要专门的检测手段（内存特征、端口、so 文件等）
+            └── 属于“动态注入/hook 框架检测”层，与调试器检测分开
+</pre>
+</div>
