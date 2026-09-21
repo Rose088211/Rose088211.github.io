@@ -1,0 +1,75 @@
+第一关：搭骨架（明确方案与创建项目）
+目标：决定用 C++ 和 CMake 造一个动态链接库（DLL）。
+
+我们做了什么：
+就像盖房子要先画图纸、备材料，我们建了三个文件夹：
+
+include/：放图纸（头文件 hello.h，告诉别人我们有什么功能）。
+
+src/：放砖块（源文件 hello.cpp，具体功能的实现）。
+
+test/：放验收员（main.cpp，用来测试 DLL 能不能用）。
+
+CMakeLists.txt：施工说明书，告诉电脑怎么把这些东西拼起来。
+
+第二关：打怪升级（解决环境与配置报错）
+这一关最折磨，但也是小白必经之路。我们遇到了 4 个怪物：
+
+👾 怪物 1：找不到编译器
+症状：在终端敲 g++ --version，系统报错“无法识别”。
+
+原因：电脑没装 C++ 翻译官。
+
+解法：确认你装了 MSYS2，把它的翻译官目录 C:\msys64\mingw64\bin 加进了系统的“环境变量 PATH”里。
+
+👾 怪物 2：填错了生成器
+症状：VS Code 报错“无法确定要使用的 CMake 生成器”。
+
+原因：在设置里，把生成器填成了 C:\msys64\mingw64.exe（填成具体文件路径了）。
+
+解法：在 settings.json 里，把它改成纯文字 "cmake.generator": "MinGW Makefiles"（告诉电脑用 MinGW 这套工具来干活）。
+
+👾 怪物 3：找不到 make 工具
+症状：CMake 报错 CMAKE_MAKE_PROGRAM is not set。
+
+原因：CMake 找到了翻译官（g++），但找不到负责“搬砖”的工具（mingw32-make.exe）。
+
+解法：需要安装 make 工具。
+
+👾 怪物 4：pacman 命令不认识
+症状：在 PowerShell 里敲 pacman -S mingw-w64-x86_64-make，报错“无法识别”。
+
+原因：pacman 是 MSYS2 的专属“应用商店”，只能在 MSYS2 终端里用，不能在 Windows 自带的 PowerShell 里用。
+
+解法：去 Windows 开始菜单，打开 MSYS2 MINGW64 终端，再敲上面的安装命令。
+
+第三关：初战告捷（成功构建，但结果不对）
+结果：终端显示 “生成已完成，退出代码为 0”！恭喜，构建成功了！
+
+但是，仔细看日志里有一行：
+
+Linking CXX static library libDLL_Hijacking.a
+
+小白科普：
+
+我们想要的是 DLL（动态链接库，像是一个可以随时插拔的U盘）。
+
+但系统造出来的是 .a（静态库，像是一块直接焊死在主板上的芯片）。
+
+为什么？ 因为 CMakeLists.txt 里没写 SHARED（共享）这个词，电脑默认给你造了静态库。
+
+🚀 下一关：最后的临门一脚（下一步你要做什么）
+只差一行代码，就能拿到真正的 DLL 了：
+
+打开 CMakeLists.txt，找到 add_library(DLL_Hijacking DLL_Hijacking.cpp)。
+
+在项目名后面加上 SHARED，变成：
+
+cmake
+add_library(DLL_Hijacking SHARED DLL_Hijacking.cpp)
+把之前的 build 文件夹整个删掉（清理旧图纸）。
+
+在 VS Code 里按 Ctrl+Shift+P -> CMake: Configure，然后再 CMake: Build。
+
+胜利条件：
+看到日志变成 Linking CXX shared library libDLL_Hijacking.dll，你就能在 build 文件夹里找到闪闪发光的 .dll 文件了！
