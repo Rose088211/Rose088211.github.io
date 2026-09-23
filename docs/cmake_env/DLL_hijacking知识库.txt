@@ -1,0 +1,131 @@
+author: Rose08882
+time: 2026-09-22 09:29:01.563323
+
+{
+  "dll_hijacking_and_injection": {
+    "overview": "DLL劫持与注入是将恶意动态链接库（DLL）强制加载到目标进程地址空间的技术，使其代码获得与该进程相同的执行权限，从而实现跨进程操作。该技术基于Windows进程内存隔离机制，通常需通过权限提升、内存写入和远程线程控制等步骤完成[reference:0]。技术兼具正反应用场景，既用于安全监控、系统调试等合法领域，也被恶意软件用于进程控制或数据窃取[reference:1]。",
+    "techniques": [
+      {
+        "name": "远程线程注入",
+        "keywords": ["远程线程", "CreateRemoteThread", "LoadLibrary"],
+        "background": "DLL注入最经典和基础的方法。利用Windows API CreateRemoteThread在目标进程中创建新线程，执行LoadLibrary加载指定DLL。核心流程包括：OpenProcess获取目标进程权限，VirtualAllocEx分配内存空间，WriteProcessMemory写入DLL路径，CreateRemoteThread创建远程线程执行LoadLibraryA加载DLL[reference:2]。",
+        "mechanism": "调用CreateRemoteThread创建远程线程，将LoadLibrary地址和DLL路径作为参数传递给该线程，使目标进程主动加载DLL[reference:3]。",
+        "use_cases": "基础DLL注入，适用于同权限级别的进程注入，但行为较为明显，容易被安全软件检测（'classic, noisy, durable'）[reference:4]。",
+        "notes": "需要32位/64位架构匹配，是目前最广泛的DLL注入方式之一。"
+      },
+      {
+        "name": "APC注入（内存APC / 异步过程调用注入）",
+        "keywords": ["内存APC", "QueueUserAPC", "Early-bird"],
+        "background": "APC（Asynchronous Procedure Call，异步过程调用）是Windows的一种线程执行机制。每个线程都有一个附加的APC队列，在线程处于可警告的等待状态（alertable state）时被处理。APC注入利用这一机制，通过向目标进程的现有线程队列中插入APC函数，避免创建新线程，从而更加隐蔽[reference:5][reference:6]。",
+        "mechanism": "调用QueueUserAPC()函数向目标进程的线程APC队列中添加一个函数指针，通常指向LoadLibrary，当线程进入可警告等待状态（如调用SleepEx、WaitForSingleObjectEx）时执行APC，加载恶意DLL[reference:7]。",
+        "variants": "Early-bird APC注入：在主线程调用ResumeThread之前排队APC，使APC在进程启动早期执行[reference:8]。",
+        "use_cases": "隐蔽性较高，不创建新线程，可用于绕过某些检测机制。",
+        "notes": "只有线程设置为可唤醒模式才能检查APC队列，因此需要确保目标线程处于可警告等待状态[reference:9]。"
+      },
+      {
+        "name": "线程执行劫持（SetThreadContext / 内存注入）",
+        "keywords": ["劫持", "SetThreadContext", "SuspendThread"],
+        "background": "通过挂起目标进程的现有线程，修改其执行上下文（Context），将指令指针（EIP/RIP）指向恶意代码，然后恢复线程执行。这是一种线程劫持技术，无需创建新线程。",
+        "mechanism": "核心是通过SetThreadContext函数实现注入。挂起线程，向内存中写入shellcode，重新设置Context，然后调用SetThreadContext和ResumeThread恢复线程执行[reference:10]。",
+        "use_cases": "常用于代码注入和傀儡进程注入，隐蔽性较好。",
+        "notes": "与APC注入同属线程劫持范畴，但实现方式不同。"
+      },
+      {
+        "name": "反射式DLL注入",
+        "keywords": ["反射式注入", "Reflective DLL Injection", "无文件落地"],
+        "background": "由Stephen Fewer提出的高级注入技术，不需要使用LoadLibrary API，而是自行实现一个reflective loader()函数来代替系统的DLL加载器，将DLL从内存直接加载到目标进程中[reference:11]。",
+        "mechanism": "首先将DLL文件内容（而非映射）写入目标进程内存，然后为该DLL添加一个导出函数（反射加载器），利用这个导出函数模拟DLL装载器的操作：解析PE头、分配内存、复制节区、执行重定位、加载导入库、解析IAT、调用DllMain[reference:12]。",
+        "use_cases": "无需DLL文件落地，减少被查杀的风险，可以绕过普通DLL注入场景的检测方法[reference:13]。Cobalt Strike等工具广泛使用此技术。",
+        "notes": "宿主进程在整个过程中没有使用落地的DLL文件，是直接在内存中开展的操作。"
+      },
+      {
+        "name": "注册表注入（AppInit_DLLs）",
+        "keywords": ["注册表", "AppInit_DLLs", "持久化"],
+        "background": "Windows早期持久化技术，通过滥用注册表值将指定DLL加载到所有链接user32.dll的用户态进程中。AppInit_DLLs滥用针对HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Windows\\AppInit_DLLs及其WOW6432Node对应项[reference:14]。",
+        "mechanism": "当LoadAppInit_DLLs设为1时，user32.dll的初始化例程会将AppInit_DLLs中列出的每个DLL映射到任何加载user32.dll的进程中，几乎涵盖所有交互式GUI应用。一次注册表写入即可获得广泛的代码执行以及持久化[reference:15]。",
+        "use_cases": "广泛持久化，通过一次注册表写入影响所有GUI进程，运作方式是'新进程触发'而非一次性自启动[reference:16]。",
+        "notes": "自Windows 8起，启用Secure Boot时除非每个DLL都经过代码签名，否则AppInit机制将被禁用，在Windows 10/11上实际上已经失效，但仍出现在遗留的Windows 7/Server 2008环境中[reference:17]。"
+      },
+      {
+        "name": "COM劫持（ComRes注入）",
+        "keywords": ["COM劫持", "ComRes", "注册表"],
+        "background": "COM（Component Object Model）是Windows的组件对象模型，组件以文件路径的形式存储在Windows注册表中。COM劫持通过替换其中一个DLL文件路径为攻击者自己的路径，欺骗受害者进程加载恶意DLL而非原始组件[reference:18]。",
+        "mechanism": "攻击者枚举注册表中的COM对象条目，修改目标COM对象的InprocServer32或LocalServer32注册表键，使其指向恶意DLL或可执行文件[reference:19]。",
+        "use_cases": "不需要动态DLL注入等操作，可以绕开主动防御，宿主进程是天生的白进程，也可以绕开白名单机制，劫持DLL的加载由系统底层机制决定[reference:20]。",
+        "notes": "常见利用目标包括thumbcache.dll等，触发时机与COM对象的调用相关。"
+      },
+      {
+        "name": "输入法注入（IME注入）",
+        "keywords": ["输入法", "IME", "键盘布局"],
+        "background": "Windows输入法编辑器（IME）需要将自己的DLL注入到其他软件的内存中以实现输入功能，防护软件通常不会将输入法标识为病毒。攻击者利用这一合法机制，通过注册恶意键盘布局IME DLL，实现DLL注入[reference:21]。",
+        "mechanism": "客户端需要在特殊注册表键中注册DLL来实现键盘布局。通过发送WM_INPUTLANGCHANGEREQUEST消息，系统会加载注册表中指定的DLL到目标进程中[reference:22]。",
+        "use_cases": "游戏很难拦截输入法注入，因为输入法本身就需要跨进程工作。全系统注入的优点是利用系统机制实现，可绕过游戏进程自身的防注入保护机制[reference:23]。",
+        "notes": "无需OpenProcess或进程句柄即可注入DLL，由系统底层机制自动完成加载[reference:24]。"
+      },
+      {
+        "name": "全局消息钩子注入（全局钩子）",
+        "keywords": ["全局钩子", "SetWindowsHookEx", "WH_GETMESSAGE"],
+        "background": "Windows应用程序基于消息驱动。消息钩子（Message Hook）是Windows消息处理机制的一个监视点，通过SetWindowsHookEx系统会自动将钩子DLL注入到目标进程。当dwThreadId为0时，是全局钩子，会注入DLL到系统所有窗口进程[reference:25]。",
+        "mechanism": "调用SetWindowsHookEx安装钩子，当全局钩子时，钩子处理过程HOOKPROC必须位于DLL中。系统会自动将钩子DLL注入到目标进程，实现跨进程消息拦截[reference:26]。",
+        "use_cases": "利用全局钩子机制实现全系统注入，可绕过游戏进程自身的防注入保护机制。常见的钩子类型包括WH_CBT、WH_GETMESSAGE、WH_SHELL等[reference:27]。",
+        "notes": "由于属于全局注入，所有进程都会受到影响，需要在DllMain中进行判断，只对目标进程执行功能[reference:28]。"
+      },
+      {
+        "name": "DLL搜索顺序劫持",
+        "keywords": ["搜索顺序", "DLL Search Order Hijacking", "侧加载"],
+        "background": "当应用程序动态加载DLL而不指定完整路径名称时，Windows会按特定顺序搜索一组目录。攻击者通过在搜索路径中优先于合法DLL的目录中放置同名恶意DLL，使应用程序加载恶意DLL[reference:29]。",
+        "mechanism": "Windows的DLL搜索顺序大致为：(1)启动应用程序所在目录；(2)C:\\Windows\\System32；(3)C:\\Windows\\System；(4)C:\\Windows；(5)当前工作目录；(6)系统PATH环境变量中的目录；(7)用户PATH环境变量中的目录。攻击者将恶意DLL放置在优先搜索的位置即可劫持[reference:30]。",
+        "variants": [
+          "DLL替换：直接替换掉合法的DLL",
+          "幽灵DLL劫持：为应用程序创建恶意DLL，使其误以为这是一个不存在但必需的DLL",
+          "DLL重定向：修改%PATH%或.exe.manifest文件等搜索参数",
+          "相对路径DLL劫持：将恶意DLL与复制的应用程序一起放置在用户可控目录中",
+          "WinSxS DLL替换：在WinSxS目录中使用恶意DLL替换正版DLL"
+        ],
+        "use_cases": "主要用于代码执行和实现持久化，较少用于权限提升。多个APT组织（如APT41、Aquatic Panda等）使用此技术[reference:31]。",
+        "notes": "攻击者可以採用多种方法來劫持DLL載入的過程，但所有這些方法都有一個共同點：目標應用程式未指定所需內容的完整路徑[reference:32]。"
+      },
+      {
+        "name": "依赖可信任进程注入（DLL侧加载）",
+        "keywords": ["可信进程", "DLL侧加载", "白利用"],
+        "background": "利用防护软件对合法进程的信任，将恶意DLL伪装成合法DLL放置在DLL搜索路径上，由合法程序自动加载后实施恶意行为。防护软件会检测输入法的签名信息，如果具备合法签名则不予告警[reference:33]。",
+        "mechanism": "将恶意DLL与合法可执行文件一起放置在用户可控目录中，或利用合法程序的DLL搜索顺序，使合法程序加载恶意DLL。类似于Binary Proxy Execution技术[reference:34]。",
+        "use_cases": "常用于绕过安全软件的信任机制，实现持久化和权限提升。",
+        "notes": "与搜索顺序劫持密切相关，但更侧重于利用合法进程的信任关系。"
+      },
+      {
+        "name": "劫持进程创建注入",
+        "keywords": ["进程创建", "劫持进程"],
+        "background": "在目标进程创建时进行劫持，通过修改进程创建参数或利用调试接口在进程启动前注入DLL。属于DLL注入的变种之一[reference:35]。",
+        "mechanism": "通过挂起进程创建、修改进程环境或利用调试器接口，在目标进程初始化阶段注入恶意DLL。",
+        "use_cases": "适用于需要在进程启动早期进行注入的场景。",
+        "notes": "实现方式多样，常与调试器注入、挂起进程注入等技术结合使用。"
+      },
+      {
+        "name": "RtlCreateUserThread注入",
+        "keywords": ["RtlCreateUserThread", "底层实现"],
+        "background": "RtlCreateUserThread是CreateRemoteThread的底层实现，使用RtlCreateUserThread的原理与CreateRemoteThread类似，但可以直接调用绕过Win7/Vista对这方面的检测，因此可以注入到系统进程中（如winlogon.exe）[reference:36]。",
+        "mechanism": "直接调用RtlCreateUserThread创建线程，绕过了系统封装。与CreateRemoteThread的区别在于：写入目标进程的是shellcode而非DLL路径；没有和csrss通讯，线程体必须自己调用ExitThread结束线程[reference:37]。",
+        "use_cases": "注入系统进程，绕过部分检测机制。",
+        "notes": "因为不是本地调用，无法通过劫持API达到监视目的。"
+      }
+    ],
+    "summary_table": {
+      "columns": ["技术名称", "核心API/机制", "隐蔽性", "主要应用场景"],
+      "rows": [
+        ["远程线程注入", "CreateRemoteThread + LoadLibrary", "低（明显）", "基础注入"],
+        ["APC注入", "QueueUserAPC", "高", "隐蔽注入"],
+        ["线程执行劫持", "SetThreadContext", "中高", "代码注入"],
+        ["反射式DLL注入", "Reflective Loader（自实现）", "很高（无文件落地）", "高级渗透"],
+        ["注册表注入", "AppInit_DLLs注册表键", "中（受Secure Boot限制）", "持久化"],
+        ["COM劫持", "InprocServer32/LocalServer32", "高", "持久化、白利用"],
+        ["输入法注入", "IME键盘布局注册表", "很高", "绕过游戏保护"],
+        ["全局钩子注入", "SetWindowsHookEx", "中", "全系统注入"],
+        ["搜索顺序劫持", "DLL搜索路径劫持", "中", "代码执行、持久化"],
+        ["DLL侧加载", "合法进程信任", "高", "白利用、权限提升"],
+        ["劫持进程创建", "进程创建劫持", "中", "早期注入"],
+        ["RtlCreateUserThread", "RtlCreateUserThread", "中高", "系统进程注入"]
+      ]
+    }
+  }
+}

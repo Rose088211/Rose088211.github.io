@@ -1,0 +1,129 @@
+author: Rose0882
+time: 2026-09-22 09:32:53.663026
+
+DLL劫持与注入
+├── 1. 概述
+│   ├── 定义：将DLL强制加载到目标进程地址空间，使代码获得目标进程权限
+│   ├── 基础：Windows进程隔离、权限提升、内存写入、远程线程控制
+│   └── 双用途：安全监控/调试；恶意软件控制/窃密
+│
+├── 2. 技术清单
+│   ├── 2.1 远程线程注入
+│   │   ├── 关键词：远程线程 / CreateRemoteThread / LoadLibrary
+│   │   ├── 背景：最经典、最基础的DLL注入方式
+│   │   ├── 机制：OpenProcess → VirtualAllocEx → WriteProcessMemory → CreateRemoteThread(LoadLibrary)
+│   │   ├── 场景：同权限进程注入
+│   │   └── 备注：行为明显，易被检测；需32/64位架构匹配
+│   │
+│   ├── 2.2 APC注入（内存APC / 异步过程调用注入）
+│   │   ├── 关键词：内存APC / QueueUserAPC / Early-bird
+│   │   ├── 背景：利用线程APC队列，在可警告等待状态执行注入代码
+│   │   ├── 机制：QueueUserAPC向目标线程插入APC，指向LoadLibrary等函数
+│   │   ├── 变体：Early-bird APC注入，在ResumeThread前排队APC
+│   │   ├── 场景：隐蔽性较高，不创建新线程
+│   │   └── 备注：目标线程必须进入可警告等待状态
+│   │
+│   ├── 2.3 线程执行劫持
+│   │   ├── 关键词：劫持 / SetThreadContext / SuspendThread
+│   │   ├── 背景：挂起现有线程，修改执行上下文，使EIP/RIP指向恶意代码
+│   │   ├── 机制：SuspendThread → GetThreadContext → SetThreadContext → ResumeThread
+│   │   ├── 场景：代码注入、傀儡进程注入
+│   │   └── 备注：与APC注入同属线程劫持范畴，但实现不同
+│   │
+│   ├── 2.4 反射式DLL注入
+│   │   ├── 关键词：反射式注入 / Reflective DLL Injection / 无文件落地
+│   │   ├── 背景：Stephen Fewer提出，不使用LoadLibrary，自实现反射加载器
+│   │   ├── 机制：写入DLL内容 → 解析PE头 → 分配内存 → 复制节区 → 重定位 → 解析IAT → 调用DllMain
+│   │   ├── 场景：高级渗透，Cobalt Strike等工具常用
+│   │   └── 备注：DLL不落地，直接在内存中加载，隐蔽性很高
+│   │
+│   ├── 2.5 注册表注入（AppInit_DLLs）
+│   │   ├── 关键词：注册表 / AppInit_DLLs / 持久化
+│   │   ├── 背景：滥用注册表值，将DLL加载到所有加载user32.dll的用户态进程
+│   │   ├── 机制：修改 HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Windows\AppInit_DLLs
+│   │   ├── 场景：广泛持久化，一次写入影响所有GUI进程
+│   │   └── 备注：Win8起启用Secure Boot后基本失效，主要存在于旧系统
+│   │
+│   ├── 2.6 COM劫持（ComRes注入）
+│   │   ├── 关键词：COM劫持 / ComRes / 注册表
+│   │   ├── 背景：COM组件路径存于注册表，替换为恶意DLL路径即可劫持
+│   │   ├── 机制：修改 InprocServer32 / LocalServer32 注册表键
+│   │   ├── 场景：持久化、白利用、绕过白名单
+│   │   └── 备注：常见目标如thumbcache.dll，触发依赖COM对象调用
+│   │
+│   ├── 2.7 输入法注入（IME注入）
+│   │   ├── 关键词：输入法 / IME / 键盘布局
+│   │   ├── 背景：输入法本身需跨进程注入DLL，攻击者滥用该合法机制
+│   │   ├── 机制：注册恶意IME DLL，发送WM_INPUTLANGCHANGEREQUEST触发加载
+│   │   ├── 场景：绕过游戏防注入保护
+│   │   └── 备注：无需OpenProcess，由系统底层自动加载DLL
+│   │
+│   ├── 2.8 全局消息钩子注入（全局钩子）
+│   │   ├── 关键词：全局钩子 / SetWindowsHookEx / WH_GETMESSAGE
+│   │   ├── 背景：Windows消息钩子机制，全局钩子会自动注入DLL到目标进程
+│   │   ├── 机制：SetWindowsHookEx，dwThreadId=0，HOOKPROC位于DLL中
+│   │   ├── 场景：全系统注入，绕过游戏进程防注入保护
+│   │   └── 备注：所有进程受影响，需在DllMain中判断目标进程
+│   │
+│   ├── 2.9 DLL搜索顺序劫持
+│   │   ├── 关键词：搜索顺序 / DLL Search Order Hijacking / 侧加载
+│   │   ├── 背景：应用加载DLL未指定完整路径，Windows按搜索顺序查找
+│   │   ├── 机制：搜索顺序：应用目录 → System32 → System → Windows → 当前目录 → PATH
+│   │   ├── 变体：DLL替换、幽灵DLL、DLL重定向、相对路径劫持、WinSxS替换
+│   │   ├── 场景：代码执行、持久化
+│   │   └── 备注：多个APT组织使用，如APT41、Aquatic Panda
+│   │
+│   ├── 2.10 依赖可信任进程注入（DLL侧加载）
+│   │   ├── 关键词：可信进程 / DLL侧加载 / 白利用
+│   │   ├── 背景：利用防护软件对合法进程的信任，由合法程序加载恶意DLL
+│   │   ├── 机制：恶意DLL伪装成合法DLL，放置在DLL搜索路径中
+│   │   ├── 场景：绕过安全软件信任机制、持久化、权限提升
+│   │   └── 备注：与搜索顺序劫持密切相关，更侧重白利用
+│   │
+│   ├── 2.11 劫持进程创建注入
+│   │   ├── 关键词：进程创建 / 劫持进程
+│   │   ├── 背景：在目标进程创建时进行劫持，启动前注入DLL
+│   │   ├── 机制：挂起进程创建、修改进程环境、利用调试接口
+│   │   ├── 场景：需要进程启动早期注入
+│   │   └── 备注：常与调试器注入、挂起进程注入结合
+│   │
+│   └── 2.12 RtlCreateUserThread注入
+│       ├── 关键词：RtlCreateUserThread / 底层实现
+│       ├── 背景：CreateRemoteThread的底层实现，可绕过部分检测
+│       ├── 机制：直接调用RtlCreateUserThread；写入shellcode而非DLL路径
+│       ├── 场景：注入系统进程，如winlogon.exe
+│       └── 备注：无线程与csrss通讯，线程体需自行调用ExitThread
+│
+├── 3. 按机制分类视图
+│   ├── 主动线程控制
+│   │   ├── 远程线程注入
+│   │   ├── APC注入
+│   │   ├── 线程执行劫持
+│   │   └── RtlCreateUserThread注入
+│   ├── 内存加载器
+│   │   └── 反射式DLL注入
+│   ├── 注册表/系统组件
+│   │   ├── AppInit_DLLs注册表注入
+│   │   ├── COM劫持
+│   │   └── 输入法IME注入
+│   ├── 消息机制
+│   │   └── 全局消息钩子注入
+│   ├── 文件/路径
+│   │   ├── DLL搜索顺序劫持
+│   │   └── DLL侧加载
+│   └── 进程创建
+│       └── 劫持进程创建注入
+│
+└── 4. 技术对比总结
+    ├── 远程线程注入 → CreateRemoteThread + LoadLibrary → 隐蔽性低 → 基础注入
+    ├── APC注入 → QueueUserAPC → 隐蔽性高 → 隐蔽注入
+    ├── 线程执行劫持 → SetThreadContext → 隐蔽性中高 → 代码注入
+    ├── 反射式DLL注入 → 自实现Reflective Loader → 隐蔽性很高 → 高级渗透
+    ├── 注册表注入 → AppInit_DLLs → 隐蔽性中 → 持久化
+    ├── COM劫持 → InprocServer32/LocalServer32 → 隐蔽性高 → 持久化/白利用
+    ├── 输入法注入 → IME键盘布局注册表 → 隐蔽性很高 → 绕过游戏保护
+    ├── 全局钩子注入 → SetWindowsHookEx → 隐蔽性中 → 全系统注入
+    ├── 搜索顺序劫持 → DLL搜索路径 → 隐蔽性中 → 代码执行/持久化
+    ├── DLL侧加载 → 合法进程信任 → 隐蔽性高 → 白利用/提权
+    ├── 劫持进程创建 → 进程创建劫持 → 隐蔽性中 → 早期注入
+    └── RtlCreateUserThread → RtlCreateUserThread → 隐蔽性中高 → 系统进程注入
