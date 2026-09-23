@@ -32,6 +32,7 @@
         "alefragnani.project-manager",
         "gruntfuggly.todo-tree",
         "alefragnani.bookmarks",
-        "kevindowling.logcat-viewer"
+        "kevindowling.logcat-viewer",
+        "timheuer.pfx-view"
     ]
 }
