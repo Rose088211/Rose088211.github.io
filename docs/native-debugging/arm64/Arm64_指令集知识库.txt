@@ -2,10 +2,10 @@
 <pre>//author: Rose088211
 //time: 2026-08-27 18:08:13.773055
 
-# Arm64 指令集笔记
+# A64 指令集入门笔记（详解版）
 
-&gt; 改写自《Armv8/armv9 架构入门指南》第 6 章「A64 指令集」，为初学者补充了每条指令的英文全称和字面含义。
-&gt; 学习标记：`[必会]`（读汇编天天见）｜`[了解]`（常见但可慢慢啃）｜`[熟悉]`（先认识名字）
+> 改写自《Armv8/armv9 架构入门指南》第 6 章「A64 指令集」，为初学者补充了每条指令的英文全称和字面含义。
+> 学习标记：`[必会]`（读汇编天天见）｜`[了解]`（常见但可慢慢啃）｜`[熟悉]`（先认识名字）
 
 ---
 
@@ -16,13 +16,13 @@
 1. **高度优化的代码**（编译器开发、极致性能调优）
 2. **操作系统底层**（开机启动代码、设备驱动）
 3. **使用 C 语言表达不了的低级功能**
-4. **调试**：单步调试 C 程序时，屏幕上显示的就是汇编——所以&quot;看懂汇编&quot;是调试硬功夫
+4. **调试**：单步调试 C 程序时，屏幕上显示的就是汇编——所以"看懂汇编"是调试硬功夫
 
 本笔记的目标就是第 4 条：读懂编译器生成的代码。
 
 ---
 
-## 1. 开胃课：看懂指令命名的&quot;构词法&quot;
+## 1. 开胃课：看懂指令命名的"构词法"
 
 A64 的助记符几乎全是英文缩写，掌握三条规律，生词也能猜出七八分：
 
@@ -35,7 +35,7 @@ A64 的助记符几乎全是英文缩写，掌握三条规律，生词也能猜�
 | W | Word | 字 | 32 位 |
 | X / D | eXtended / Doubleword | 双字 | 64 位 |
 
-&gt; 注意：ARM 的“字”（Word）是 32 位，和 x86 世界（字 = 16 位）不一样！
+> 注意：ARM 的“字”（Word）是 32 位，和 x86 世界（字 = 16 位）不一样！
 
 ### 1.2 S / U 前缀
 
@@ -65,7 +65,7 @@ A64 的助记符几乎全是英文缩写，掌握三条规律，生词也能猜�
 | X30 = LR | Link Register | 链接寄存器，存函数的返回地址 |
 | X29 = FP | Frame Pointer | 帧指针 |
 | PC | Program Counter | 程序计数器（A64 里不能当普通寄存器读写） |
-| NZCV | Negative/Zero/Carry/oVerflow | 四个条件标志位（见 &#167;5） |
+| NZCV | Negative/Zero/Carry/oVerflow | 四个条件标志位（见 §5） |
 
 ---
 
@@ -97,7 +97,7 @@ SUB  X0, X1, X2       // X0 = X1 - X2
 
 ADC/SBC 用途：两个 64 位拼成一个 128 位大数做加减时传递进/借位，应用代码罕见，知道即可。
 
-&gt; 提示：立即数有格式限制（12 位，还可整体左移 12 位）。大常数塞不进指令时，编译器把它放进“文字池”再用 LDR 取。
+> 提示：立即数有格式限制（12 位，还可整体左移 12 位）。大常数塞不进指令时，编译器把它放进“文字池”再用 LDR 取。
 
 ### 3.2 逻辑运算 `[必会]`
 
@@ -122,7 +122,7 @@ BIC  X0, X0, X1     // X0 = X0 且非掩码 → 只清掉第 11 位
 第二操作数可以自带移位，一条顶两条：
 
 ```armasm
-ADD W0, W1, W2, LSL #3    // W0 = W1 + (W2 &lt;&lt; 3)
+ADD W0, W1, W2, LSL #3    // W0 = W1 + (W2 << 3)
 ```
 
 ### 3.3 比较三剑客 `[必会]`（不存结果，只留标志）
@@ -131,36 +131,36 @@ ADD W0, W1, W2, LSL #3    // W0 = W1 + (W2 &lt;&lt; 3)
 |---|---|---|---|
 | `CMP` | Compare | 比较 | 偷偷做减法 `Rn−操作数2`，**扔掉结果只设标志** |
 | `CMN` | Compare Negative | 负数比较（加法比较） | 偷偷做加法 `Rn+操作数2` 再设标志 |
-| `TST` | Test | 测试 | 偷偷做 AND，用来测&quot;某几位是否全 0&quot; |
+| `TST` | Test | 测试 | 偷偷做 AND，用来测"某几位是否全 0" |
 
-这就是我们前面学的：&quot;cmp 计算减法但扔掉答案，只在 CPU 里留下 N/Z/C/V 四个痕迹&quot;，供后面的 `b.cond` 查看。
+这就是我们前面学的："cmp 计算减法但扔掉答案，只在 CPU 里留下 N/Z/C/V 四个痕迹"，供后面的 `b.cond` 查看。
 
 ### 3.4 移位四将 `[必会]`
 
 | 助记符 | 英文全称 | 中文 | 直观理解 |
 |---|---|---|---|
-| `LSL` | Logical Shift Left | 逻辑左移 | &#215;2ⁿ，右边补 0 |
-| `LSR` | Logical Shift Right | 逻辑右移 | &#247;2ⁿ，左边补 0（不看符号） |
-| `ASR` | Arithmetic Shift Right | 算术右移 | &#247;2ⁿ，左边补符号位（负数除法用这个！） |
+| `LSL` | Logical Shift Left | 逻辑左移 | ×2ⁿ，右边补 0 |
+| `LSR` | Logical Shift Right | 逻辑右移 | ÷2ⁿ，左边补 0（不看符号） |
+| `ASR` | Arithmetic Shift Right | 算术右移 | ÷2ⁿ，左边补符号位（负数除法用这个！） |
 | `ROR` | Rotate Right | 循环右移 | 右边转出去的位绕回左边，像旋转门 |
 
 ```armasm
-LSL X0, X1, #4     // X0 = X1 &lt;&lt; 4 （= X1 &#215; 16）
-ASR X0, X1, #1     // X0 = X1 &gt;&gt; 1，保号（-7 → -4）
+LSL X0, X1, #4     // X0 = X1 << 4 （= X1 × 16）
+ASR X0, X1, #1     // X0 = X1 >> 1，保号（-7 → -4）
 ```
 
-&gt; 提示：find_max 里的 `[x0, x3, lsl #3]` 就是借用 LSL 做“下标 &#215; 8”。
-&gt; 注意：对负数进行带符号右移时使用 ASR；LSR 会把负数的补码当作无符号数右移，结果通常不符合预期。
+> 提示：find_max 里的 `[x0, x3, lsl #3]` 就是借用 LSL 做“下标 × 8”。
+> 注意：对负数进行带符号右移时使用 ASR；LSR 会把负数的补码当作无符号数右移，结果通常不符合预期。
 
 ### 3.5 乘法和除法 `[必会]`
 
 | 助记符 | 英文全称 | 中文 | 作用 |
 |---|---|---|---|
-| `MUL` | Multiply | 乘 | `Rd = Rn &#215; Rm`（高位丢弃） |
-| `MADD` | Multiply-Add | 乘加 | `Rd = Rn &#215; Rm + Ra`，一条完成乘加 |
-| `MSUB` | Multiply-Subtract | 乘减 | `Rd = Ra − Rn &#215; Rm` |
-| `MNEG` | Multiply-Negate | 乘负 | `Rd = −(Rn &#215; Rm)` |
-| `SMULL` | Signed Multiply Long | 有符号长乘 | **32&#215;32 → 完整64位结果**（Long=变宽！） |
+| `MUL` | Multiply | 乘 | `Rd = Rn × Rm`（高位丢弃） |
+| `MADD` | Multiply-Add | 乘加 | `Rd = Rn × Rm + Ra`，一条完成乘加 |
+| `MSUB` | Multiply-Subtract | 乘减 | `Rd = Ra − Rn × Rm` |
+| `MNEG` | Multiply-Negate | 乘负 | `Rd = −(Rn × Rm)` |
+| `SMULL` | Signed Multiply Long | 有符号长乘 | **32×32 → 完整64位结果**（Long=变宽！） |
 | `UMULL` | Unsigned Multiply Long | 无符号长乘 | 同上，无符号 |
 | `UDIV` | Unsigned Divide | 无符号除 | 商向零截断 |
 | `SDIV` | Signed Divide | 有符号除 | 同上，区分符号 |
@@ -168,19 +168,19 @@ ASR X0, X1, #1     // X0 = X1 &gt;&gt; 1，保号（-7 → -4）
 ```armasm
 MUL   X0, X1, X2       // X0 = X1 * X2
 MADD  X0, X1, X2, X3   // X0 = X1 * X2 + X3
-SMULL X0, W1, W2       // 32位&#215;32位，完整64位积放进 X0
+SMULL X0, W1, W2       // 32位×32位，完整64位积放进 X0
 UDIV  W0, W1, W2       // W0 = W1 / W2
 ```
 
-为什么需要&quot;长乘&quot;？普通 `MUL W0,W1,W2` 两个 32 位相乘只保留低 32 位会溢出；SMULL 保住全部 64 位结果。
+为什么需要"长乘"？普通 `MUL W0,W1,W2` 两个 32 位相乘只保留低 32 位会溢出；SMULL 保住全部 64 位结果。
 
 **除法三条冷知识**：
 
 - 除以 0 **不崩溃，结果得 0**
 - 有符号溢出不崩溃：`INT_MIN / -1` 返回 `INT_MIN`
-- 结果**向零截断**（-7&#247;2 = -3，和多数 C 编译器一致）
+- 结果**向零截断**（-7÷2 = -3，和多数 C 编译器一致）
 
-限制：没有直接的 32&#215;64 混合乘法，想混乘先用扩展指令统一宽度。
+限制：没有直接的 32×64 混合乘法，想混乘先用扩展指令统一宽度。
 
 ### 3.6 扩展指令 `[了解]`（窄数据变大）
 
@@ -216,7 +216,7 @@ UXTB X0, W1    // 无论正负，高56位一律补0
 
 ### 3.8 条件数据处理指令 `[必会]`（重点！编译器最爱）
 
-**重要背景**：老 ARM(A32) 几乎每条指令都能带条件；**A64 只有分支可以条件执行**。那 `if` 式赋值怎么办？靠这批&quot;无条件执行、拿标志位当额外输入&quot;的指令：
+**重要背景**：老 ARM(A32) 几乎每条指令都能带条件；**A64 只有分支可以条件执行**。那 `if` 式赋值怎么办？靠这批"无条件执行、拿标志位当额外输入"的指令：
 
 | 助记符 | 英文全称 | 作用 |
 |---|---|---|
@@ -245,7 +245,7 @@ ADD  W1, W1, #2       // 再算好 r+2 放 W1
 CSEL W1, W1, W2, EQ   // i==0 成立选 W1(r+2)，否则选 W2(r-1)
 ```
 
-套路总结：**两个分支都先算出来，最后一条 CSEL 挑答案**——全程无跳转，流水线不被打断。看到&quot;算了两个结果 + csel 收尾&quot;，源代码多半是个 if-else。
+套路总结：**两个分支都先算出来，最后一条 CSEL 挑答案**——全程无跳转，流水线不被打断。看到"算了两个结果 + csel 收尾"，源代码多半是个 if-else。
 
 ---
 
@@ -272,7 +272,7 @@ CSEL W1, W1, W2, EQ   // i==0 成立选 W1(r+2)，否则选 W2(r-1)
 | `STRH` | Store Register Halfword | 存最低 2 字节 | — |
 
 对应 C：`unsigned char` 元素用 `LDRB`；`char`/`int8_t` 用 `LDRSB`；`int32_t` 负数要装进 64 位寄存器时用 `LDRSW`。
-写 W 寄存器自动清高 32 位，所以&quot;零扩展加载&quot;不需要专门指令。
+写 W 寄存器自动清高 32 位，所以"零扩展加载"不需要专门指令。
 
 ### 4.2 三种寻址模式 `[熟悉]`（读反汇编的分水岭）
 
@@ -290,7 +290,7 @@ STR W3, [X0, W2, SXTW, #2] // 偏移可以是符号扩展过的32位下标（int
 ```c
 void example(int32_t a[], int32_t length) {
     int32_t first = a[0];              // LDR W3, [X0]
-    for (int32_t i = 1; i &lt; length; i++)
+    for (int32_t i = 1; i < length; i++)
         a[i] = first;                  // STR W3, [X0, W2, SXTW, #2]
 }
 ```
@@ -311,13 +311,13 @@ void strcpy(char *dst, const char *src) {
     do {
         c = *(src++);    // LDRB W2, [X1], #1   ← 读1字节，src后移
         *(dst++) = c;    // STRB W2, [X0], #1   ← 写1字节，dst后移
-    } while (c != &#39;\0&#39;);
+    } while (c != '\0');
 }
 ```
 
 **③ PC 相对寻址（字面加载 Literal load）** `[了解]`：超大常量塞不进指令，编译器把它放在代码附近的“文字池”（literal pool），用相对当前 PC 的地址去取。仅加载指令支持，射程远。
 
-&gt; 附注：偶尔见到 `LDUR`/`STUR`（LoaD/STore Register Unscaled）——只是偏移量数值&quot;不规整&quot;时的另一种编码，汇编器自动挑，人不操心。
+> 附注：偶尔见到 `LDUR`/`STUR`（LoaD/STore Register Unscaled）——只是偏移量数值"不规整"时的另一种编码，汇编器自动挑，人不操心。
 
 ### 4.3 成对搬运 LDP / STP `[必会]`（函数的招牌动作）
 
@@ -331,16 +331,16 @@ STP X29, X30, [SP, #-16]!   // 函数开场白：帧指针+返回地址压栈保
 LDP X29, X30, [SP], #16     // 函数谢幕：恢复它们
 ```
 
-看到 `stp ...,x30,[sp]` 就知道函数开始了。老 ARM 的批量指令 LDM/STM 在 A64 已被砍掉，只剩这对&quot;双人组&quot;；立即数范围 7 位有符号，可选前/后索引。
+看到 `stp ...,x30,[sp]` 就知道函数开始了。老 ARM 的批量指令 LDM/STM 在 A64 已被砍掉，只剩这对"双人组"；立即数范围 7 位有符号，可选前/后索引。
 
 ### 4.4 其余访存指令 `[熟悉]`（先认识名字）
 
 | 助记符 | 英文全称 | 一句话 |
 |---|---|---|
-| `PRFM` | PReFetch Memory | 提示缓存：&quot;这地址马上要用，先搬进来&quot; |
-| `LDNP`/`STNP` | Load/Store Pair Non-temporal | 成对读写+&quot;不值得缓存&quot;提示（流式大块数据） |
+| `PRFM` | PReFetch Memory | 提示缓存："这地址马上要用，先搬进来" |
+| `LDNP`/`STNP` | Load/Store Pair Non-temporal | 成对读写+"不值得缓存"提示（流式大块数据） |
 | `LDTR`/`STTR` | Load/Store unprivileged | 内核态假装用户态权限去访存 |
-| `LDAR`/`STLR` | Load-Acquire / Store-Release | 带&quot;获取/释放&quot;语义的单边屏障 |
+| `LDAR`/`STLR` | Load-Acquire / Store-Release | 带"获取/释放"语义的单边屏障 |
 | `DMB` | Data Memory Barrier | 数据内存屏障：之前的访存全部全局可见后才准继续 |
 | `DSB` | Data Synchronization Barrier | 更强：连缓存/TLB维护也要等完 |
 | `ISB` | Instruction Synchronization Barrier | 清空流水线重新取指 |
@@ -355,30 +355,30 @@ LDP X29, X30, [SP], #16     // 函数谢幕：恢复它们
 
 | 助记符 | 英文全称 | 作用 | 备注 |
 |---|---|---|---|
-| `B` | Branch | 无条件跳转 | 射程 &#177;128MB |
-| `B.cond` | Branch on Condition | 条件成立才跳 | 射程 &#177;1MB |
-| `BL` | Branch with Link | 跳过去并把返回地址存入 X30(LR) | 函数调用的&quot;去&quot; |
+| `B` | Branch | 无条件跳转 | 射程 ±128MB |
+| `B.cond` | Branch on Condition | 条件成立才跳 | 射程 ±1MB |
+| `BL` | Branch with Link | 跳过去并把返回地址存入 X30(LR) | 函数调用的"去" |
 | `BR Xn` | Branch to Register | 跳到寄存器里的地址 | 绝对跳转（switch表/虚函数） |
 | `BLR Xn` | Branch with Link to Register | BR + 返回地址入 X30 | 调函数指针 |
 | `RET` | RETurn (from subroutine) | 返回，默认跳回 X30 | 可写 `RET Xn` |
-| `CBZ` | Compare &amp; Branch if Zero | 为 0 则跳 | 不碰标志位 |
-| `CBNZ` | Compare &amp; Branch if Non-Zero | 非 0 则跳 | 不碰标志位 |
-| `TBZ` | Test Bit &amp; Branch if Zero | 第 bit 位为 0 则跳 | 不碰标志位 |
-| `TBNZ` | Test Bit &amp; Branch if Non-Zero | 第 bit 位为 1 则跳 | 不碰标志位 |
+| `CBZ` | Compare & Branch if Zero | 为 0 则跳 | 不碰标志位 |
+| `CBNZ` | Compare & Branch if Non-Zero | 非 0 则跳 | 不碰标志位 |
+| `TBZ` | Test Bit & Branch if Zero | 第 bit 位为 0 则跳 | 不碰标志位 |
+| `TBNZ` | Test Bit & Branch if Non-Zero | 第 bit 位为 1 则跳 | 不碰标志位 |
 
 要点：
 
 1. **函数调用 = `bl` 进 + `ret` 出**，接力棒是 X30。被调函数若还要调用别人，须先把 X30 存栈上（就是 STP 那句）。
-2. `CBZ/TBZ` 系列 = &quot;比较+分支&quot;合体，省一条 cmp，且完全不读写 NZCV。
+2. `CBZ/TBZ` 系列 = "比较+分支"合体，省一条 cmp，且完全不读写 NZCV。
 3. 条件后缀总表（有符号 g/l 打头，无符号 h/l 收尾）：
 
 | 含义 | 有符号 | 全称 | 无符号 | 全称 |
 |---|---|---|---|---|
 | 相等 | `EQ` | EQual | `EQ` | — |
 | 不等 | `NE` | Not Equal | `NE` | — |
-| &lt; | `LT` | Less Than | `LO` | LOwer |
+| < | `LT` | Less Than | `LO` | LOwer |
 | ≤ | `LE` | Less or Equal | `LS` | Lower or Same |
-| &gt; | `GT` | Greater Than | `HI` | HIgher |
+| > | `GT` | Greater Than | `HI` | HIgher |
 | ≥ | `GE` | Greater or Equal | `HS` | Higher or Same（又写作 CS） |
 | 负/非负 | `MI`/`PL` | MInus / PLus | — | — |
 
@@ -395,7 +395,7 @@ LDP X29, X30, [SP], #16     // 函数谢幕：恢复它们
 | `SMC` | Secure Monitor Call | 进入安全监控器(EL3)，TrustZone 世界 |
 | `ERET` | Exception RETurn | 异常返回：恢复状态并跳回 ELR_ELn 存的地址 |
 
-层级链：**应用 --SVC--&gt; 内核(EL1) --HVC--&gt; 虚拟化管理(EL2) --SMC--&gt; 安全固件(EL3)**。Linux 上 `printf` 最终落在一条 `svc` 上。
+层级链：**应用 --SVC--> 内核(EL1) --HVC--> 虚拟化管理(EL2) --SMC--> 安全固件(EL3)**。Linux 上 `printf` 最终落在一条 `svc` 上。
 
 ### 读写系统寄存器
 
@@ -437,17 +437,17 @@ MSR SPSR_EL1, X0       // 写保存的程序状态寄存器
 
 1. `MOV X1, #0x800` 然后 `BIC X0, X0, X1`，合起来什么效果？
 2. `EOR X0, X0, X0` 执行后 X0 是多少？这条惯用法在干什么？
-3. 用 `CMP` + `CSEL` 实现：`max = (a &gt; b) ? a : b;`（a 在 W0，b 在 W1，结果放 W2）
+3. 用 `CMP` + `CSEL` 实现：`max = (a > b) ? a : b;`（a 在 W0，b 在 W1，结果放 W2）
 4. `unsigned char* buf` 取元素该用 `LDRB` 还是 `LDRSB`？`int16_t` 数组呢？
 5. 执行 `LDR X2, [X0], #16` 之后 X0 变了吗？变成什么？
 6. 函数开头 `STP X29, X30, [SP, #-16]!` 干了哪三件事？
 7. Linux 应用调 `printf` 时陷入内核用哪条指令？返回呢？
 
-&lt;details&gt;
-&lt;summary&gt;参考答案（先自己做再看）&lt;/summary&gt;
+<details>
+<summary>参考答案（先自己做再看）</summary>
 
-1. 清除 X0 第 11 位，其余位不变（0x800 = 1&lt;&lt;11）。
-2. X0 = 0。自己和自己异或必然全零——&quot;快速清零&quot;惯用法（不过现代编译器更常用 MOV X0, XZR）。
+1. 清除 X0 第 11 位，其余位不变（0x800 = 1<<11）。
+2. X0 = 0。自己和自己异或必然全零——"快速清零"惯用法（不过现代编译器更常用 MOV X0, XZR）。
 3. 
 ```armasm
 CMP W0, W1
@@ -458,10 +458,8 @@ CSEL W2, W0, W1, GT
 6. ① SP 先减 16 并回写（前索引 !）；② 存 X29（帧指针）；③ 存 X30（返回地址，防被接下来的 bl 冲掉）。
 7. 进入内核：`SVC`；返回：`ERET`。
 
-&lt;/details&gt;
+</details>
 
 ---
 
 *来源：armv8-doc.readthedocs.io《Armv8/armv9 架构入门指南》第 6 章，按初学者路径重新编排并补充全称注解。*
-</pre>
-</div>
