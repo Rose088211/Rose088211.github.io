@@ -33,6 +33,7 @@
         "gruntfuggly.todo-tree",
         "alefragnani.bookmarks",
         "kevindowling.logcat-viewer",
-        "timheuer.pfx-view"
+        "timheuer.pfx-view",
+        "wwnao.bat-formatter"
     ]
 }
