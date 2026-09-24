@@ -1,0 +1,8 @@
+Ctrl + Shift + P
+➜ APKLab: Open an APK
+➜ 选择 APK
+➜ 修改文件
+➜ 右键 apktool.yml
+➜ Rebuild APK
+➜ 右键 dist/*.apk
+➜ APKLab：安装 APK
