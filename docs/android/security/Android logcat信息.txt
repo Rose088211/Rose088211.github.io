@@ -1,0 +1,9 @@
+一般来说，LogCat敏感信息输出漏洞包括：
+应用层Log敏感信息输出
+应用层System.out.println敏感信息输出
+系统bug异常导致Log输出
+Native层敏感Log输出
+
+原理分析
+在APP的开发过程中，为了方便调试，开发者通常会用logcat输出info、debug、error 等信息。
+如果在APP发布时没有去掉logcat信息，可能会导致攻击者通过查看logcat日志获得敏感信息。
