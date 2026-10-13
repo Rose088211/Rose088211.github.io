@@ -1,0 +1,146 @@
+tools
+|——apktool
+|——auto-sgin
+|——dex2jar
+Lsmali
+
+通过apktool对APK包进行反编译，生成Smali文件。通过Smali代码找到程序的突破口进行修改，最后使用apktool重新编译并签名。
+APK 分析树
+└─ APK 文件
+   └─ 反编译成功
+      └─ output/
+         ├─ smali/
+         │  ├─ 程序所有反编译代码
+         │  ├─ 按包名/类组织
+         │  └─ 重点关注：
+         │     ├─ 注册相关类
+         │     ├─ 登录/校验相关类
+         │     ├─ Toast 调用
+         │     └─ 条件跳转与校验函数
+         │
+         ├─ res/
+         │  ├─ values/
+         │  │  ├─ strings.xml
+         │  │  │  └─ 字符串资源
+         │  │  │     └─ 示例："无效用户名或注册码"
+         │  │  └─ public.xml
+         │  │     └─ 资源 ID 映射：name -> id
+         │  ├─ layout/
+         │  ├─ drawable/
+         │  └─ ...其他资源
+         │     └─ 与开发源码目录结构一致
+         │
+         └─ resources.arsc
+            └─ 打包时 string.xml 字符串被加密存储于此
+               └─ APK 反编译后，该资源被解密出来
+
+寻找突破口
+├─ 关键线索：错误提示信息
+│  ├─ 作用：指引关键代码的风向标
+│  ├─ 情况 1：硬编码在源码中
+│  │  └─ 在 smali 中直接搜索字符串
+│  │     └─ 示例："无效用户名或注册码"
+│  └─ 情况 2：引用 res/values/string.xml
+│     └─ 打开 strings.xml 定位该字符串
+│
+├─ 示例：注册失败 Toast
+│  └─ Toast 提示："无效用户名或注册码"
+│     ├─ 打开 res/values/strings.xml
+│     ├─ 查找该字符串
+│     ├─ 获取对应资源名，如 R.string.xxx
+│     ├─ 在 smali 中搜索：
+│     │  ├─ R.string.xxx
+│     │  ├─ 对应资源 ID，如 0x7f...
+│     │  └─ 字符串常量本身
+│     ├─ 定位 Toast 调用
+│     │  └─ Landroid/widget/Toast;->makeText(...)
+│     └─ 回溯调用处
+│        └─ 注册码/用户名校验方法
+│
+└─ 核心验证代码
+   ├─ 通常位于错误提示附近
+   ├─ 注册失败分支
+   ├─ 用户名/注册码比较
+   ├─ 条件跳转：if-eqz / if-nez / if-eq / if-ne
+   └─ 成功/失败返回值
+
+分析结论
+├─ 错误提示 = 切入点
+├─ strings.xml / resources.arsc = 字符串定位依据
+├─ smali = 最终代码分析区域
+└─ 错误提示附近的校验逻辑 = 核心验证代码
+
+示例：
+gen/<packagename>/R.java
+└─ Java 源码文件
+   └─ 开发期由 aapt/aapt2 自动生成
+      └─ 给 Java/Kotlin 代码引用
+         └─ 结构：
+            public final class R {
+                public static final class string {
+                    public static final int error_invalid_user_or_code = 0x7f0b0034;
+                }
+            }
+
+res/values/public.xml
+└─ XML 资源文件
+   └─ apktool 反编译后生成
+      └─ 用于资源重建、保持资源 ID
+         └─ 结构：
+            <resources>
+                <public type="string"
+                        name="error_invalid_user_or_code"
+                        id="0x7f0b0034" />
+            </resources>
+
+分析 APK 时的实际用法
+└─ 错误提示："无效用户名或注册码"
+   ├─ 在 res/values/strings.xml 找到：
+   │  └─ <string name="error_invalid_user_or_code">无效用户名或注册码</string>
+   │
+   ├─ 在 res/values/public.xml 找到：
+   │  └─ <public type="string"
+   │              name="error_invalid_user_or_code"
+   │              id="0x7f0b0034" />
+   │
+   └─ 在 smali 中搜索：
+      └─ const vX, 0x7f0b0034
+         └─ 定位 Toast 调用
+            └─ 回溯注册校验逻辑
+
+
+本地校验的本质问题
+├─ 代码在用户手里
+├─ 用户可以反编译
+├─ 用户可以改 smali
+├─ 用户可以改返回值
+├─ 用户可以改 SharedPreferences
+├─ 用户可以抓包改响应
+└─ 所以“本地返回 true/false”不可信
+
+
+判断一个 App 是不是“纯本地校验”，可以看：
+判断清单
+├─ smali 中是否出现：
+│  ├─ HttpURLConnection
+│  ├─ OkHttpClient
+│  ├─ Retrofit
+│  ├─ Socket
+│  ├─ WebView
+│  ├─ JSON 解析
+│  └─ 服务器域名 / IP
+│
+├─ 是否只出现：
+│  ├─ SharedPreferences
+│  ├─ SQLite
+│  ├─ 文件读写
+│  ├─ 本地 boolean
+│  └─ Toast / setEnabled / setTitle
+│
+├─ 抓包看点击注册/登录时：
+│  ├─ 没有网络请求 → 纯本地
+│  └─ 有网络请求 → 可能有后端
+│
+└─ 改本地返回值后：
+   ├─ 功能完全可用 → 后端不校验
+   └─ 功能仍不可用 → 后端还有校验
