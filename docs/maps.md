@@ -12,6 +12,7 @@
 | Android 系统调用链 | Hook 与注入 | [android/hooking/Android_hook_系统点位原理分析.md](android/hooking/Android_hook_系统点位原理分析.md) | 系统 Hook 点位原理 |
 | Hook 框架 | Hook 与注入 | [android/hooking/hooking_frame知识库.md](android/hooking/hooking_frame知识库.md) | Hooking Frameworks |
 | Android 信息泄露 | 安全分析 | [android/security/Android APP信息泄露漏洞的基础知识库.md](android/security/Android APP信息泄露漏洞的基础知识库.md) | APP 信息泄露 |
+| Android 安全分析 map.txt 解读 | 安全分析 | [android/security/Android_APK_安全分析与逆向学习清单.md](android/security/Android_APK_安全分析与逆向学习清单.md) | 逐项解释分析面、目标与方法 |
 | Root 与 Jailbreak 方案 | Root 与设备修改 | [android/root-and-modification/android_ios_root方案.md](android/root-and-modification/android_ios_root方案.md) | Android/iOS Root 方案 |
 | KernelSU 非 GKI | Root 与设备修改 | [android/root-and-modification/非giki设备刷入kernelsu.md](android/root-and-modification/非giki设备刷入kernelsu.md) | 非 GKI 设备刷入 KernelSU |
 | KernelSU GKI 2.0 | Root 与设备修改 | [android/root-and-modification/非giki设备刷入kernelsu-补充.md](android/root-and-modification/非giki设备刷入kernelsu-补充.md) | GKI 2.0 KernelSU 补充 |
