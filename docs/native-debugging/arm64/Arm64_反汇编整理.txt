@@ -1,0 +1,112 @@
+函数序言特征
+stp x29, x30, [sp, #-16]!   ; 保存旧FP + 返回地址
+mov x29, sp                 ; 建立帧指针
+sub sp, sp, #0x20           ; 开局部变量空间
+
+结尾特征
+ldp x29, x30, [sp], #16
+ret
+
+函数参数特征
+ARM64 规定前 8 个参数走 x0~x7（32位用 w0~w7）：
+mov w0, #10        ; 参数1 = 10
+mov w1, x8         ; 参数2 = 某个指针
+bl  foo
+→ 联想：
+foo(10, ptr);
+
+函数返回值
+返回值看 x0：
+bl  get_len  //之后代码读 w0
+
+→ 联想：
+int len = get_len();
+
+函数内局部变量
+stur w9, [x29, #-0xc]
+
+→ 联想：
+int local = ...;
+
+函数内if条件判断
+cmp + b.xx → if
+cmp w0, #10
+b.gt label          ; w0 > 10 才跳
+
+→ 联想：
+if (w0 > 10) {
+    ...
+}
+
+函数内if-else条件判断
+cmp + b.xx → if看到"中间插一条无条件 b 跳过"就是 if-else。
+cmp w0, #0
+b.eq else_label
+; then 分支体
+b   end_label
+else_label:
+; else 分支体
+end_label:
+
+→ 联想：
+if (w0 == 0) {
+    ...
+} else {
+    ...
+}
+
+函数内for循环
+mov w19, #0            ; i = 0
+loop:
+cmp w19, w20           ; i < n ?
+b.ge done              ; 不满足就退出
+; 循环体
+add w19, w19, #1       ; i++
+b   loop               ; 回到开头
+done:
+
+→ 联想：
+for (int i = 0; i < n; i++) {
+    ...
+}
+
+函数调用
+bl  memcpy          ; 直接调用
+blr x3              ; 间接调用（虚函数/函数指针）
+
+→ 联想：
+obj->vtable[i](...);   // 虚函数
+(*callback)(...);      // 函数指针
+
+函数内数组/结构体
+ldr w1, [x0]          ; arr[0]
+ldr w2, [x0, #4]      ; arr[1]（int 4字节）
+add x0, x0, #4        ; 指针++
+
+→ 联想：
+sum += arr[i];
+p++;
+
+函数内结构体
+ldr x8, [x29, #var]   ; x8 = 结构体指针（this/ctx）
+ldr w0, [x8]          ; 成员0
+ldr w1, [x8, #4]      ; 成员1
+ldr x2, [x8, #8]      ; 成员2（指针）
+
+→ 联想：
+s->a;
+s->b;
+s->next;
+
+C类方法/对象（this、ctx）
+看到 x19/x20 被存起来反复用，八成是 this 或上下文：
+mov x19, x0           ; this = 参数1
+... 
+ldp x29,x30,[sp],#16
+ret
+
+→ 联想：
+void Class::method() {
+    this->field = ...;
+}
+
