@@ -34,6 +34,7 @@
         "alefragnani.bookmarks",
         "kevindowling.logcat-viewer",
         "timheuer.pfx-view",
-        "wwnao.bat-formatter"
+        "wwnao.bat-formatter",
+        "mutantdino.resourcemonitor"
     ]
 }
